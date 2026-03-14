@@ -182,6 +182,28 @@ const App = (() => {
     updateRouteDisplay();
     updateRoute();
 
+    // Request user location on load
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          TripMap.showUserLocation(latitude, longitude);
+          const nearest = Cameras.nearestStop(latitude, longitude, allStops);
+          if (nearest) {
+            fromStop = nearest;
+            saveHistory(nearest.id);
+            updateRouteDisplay();
+            updateRoute();
+            applyFilters();
+            updateHash();
+            savePrefs();
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
     // Online/offline detection
     updateOnlineStatus();
 
