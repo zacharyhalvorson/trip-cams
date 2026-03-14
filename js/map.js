@@ -68,20 +68,52 @@ const TripMap = (() => {
     ], { padding: [20, 20] });
   }
 
-  function drawRoute(waypoints) {
+  const ROUTE_STYLE = {
+    color: '#2DB84B',
+    weight: 3,
+    opacity: 0.5,
+    dashArray: '8, 8',
+    lineCap: 'round',
+  };
+
+  function drawRouteLine(latlngs) {
     if (routeLine) {
       map.removeLayer(routeLine);
     }
+    routeLine = L.polyline(latlngs, ROUTE_STYLE).addTo(map);
+  }
+
+  async function fetchRoadGeometry(waypoints) {
+    // OSRM expects coordinates as lon,lat pairs separated by semicolons
+    const coords = waypoints.map(w => `${w.lon},${w.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`OSRM request failed: ${resp.status}`);
+    const data = await resp.json();
+    if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('No route found');
+    // GeoJSON coordinates are [lon, lat], Leaflet needs [lat, lon]
+    return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  }
+
+  async function drawRoute(waypoints) {
+    if (routeLine) {
+      map.removeLayer(routeLine);
+      routeLine = null;
+    }
     if (!waypoints || waypoints.length < 2) return;
 
-    const latlngs = waypoints.map(w => [w.lat, w.lon]);
-    routeLine = L.polyline(latlngs, {
-      color: '#2DB84B',
-      weight: 3,
-      opacity: 0.5,
-      dashArray: '8, 8',
-      lineCap: 'round',
-    }).addTo(map);
+    // Draw straight-line immediately as placeholder
+    const straight = waypoints.map(w => [w.lat, w.lon]);
+    drawRouteLine(straight);
+
+    // Then fetch and replace with actual road geometry
+    try {
+      const roadPath = await fetchRoadGeometry(waypoints);
+      drawRouteLine(roadPath);
+    } catch (e) {
+      // Keep the straight-line fallback already drawn
+      console.warn('Could not fetch road geometry, using straight line:', e.message);
+    }
   }
 
   function fitToRoute(waypoints) {
