@@ -15,6 +15,7 @@ const App = (() => {
   let autoRefreshInterval = null;
   let currentModalCamera = null;
   let sheetExpanded = false; // true when sheet is pulled up (20vh map)
+  let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
 
   // DOM refs
   const $ = (sel) => document.querySelector(sel);
@@ -62,6 +63,26 @@ const App = (() => {
     bindEvents();
     registerServiceWorker();
     TripMap.init();
+
+    // Sync camera list when user pans/zooms the map
+    TripMap.onViewportChange((visibleIds) => {
+      if (visibleIds.length === 0) return;
+
+      // Find the first camera card (in list/route order) that's in the viewport
+      const cards = dom.cameraList.querySelectorAll('.camera-card');
+      const visibleSet = new Set(visibleIds);
+      for (const card of cards) {
+        if (visibleSet.has(card.dataset.id)) {
+          _mapInitiatedScroll = true;
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          card.classList.add('highlighted');
+          setTimeout(() => card.classList.remove('highlighted'), 2000);
+          // Clear flag after scroll settles
+          setTimeout(() => { _mapInitiatedScroll = false; }, 800);
+          break;
+        }
+      }
+    });
 
     // Load route data
     try {
@@ -463,7 +484,8 @@ const App = (() => {
       }
       TripMap.highlightVisible(visibleIds);
       // When sheet is expanded, zoom map to show visible cameras
-      if (sheetExpanded) {
+      // (but not if the map itself triggered this scroll)
+      if (sheetExpanded && !_mapInitiatedScroll) {
         TripMap.fitToVisible(visibleIds);
       }
     }, {

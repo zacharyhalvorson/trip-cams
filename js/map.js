@@ -9,6 +9,8 @@ const TripMap = (() => {
   let markers = new Map(); // camera id -> marker
   let userLocationMarker = null;
   let activeMarkerId = null;
+  let _viewportCallback = null;
+  let _lastProgrammaticMove = 0;
 
   const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -59,6 +61,7 @@ const TripMap = (() => {
     map.addLayer(markerCluster);
 
     // Default view: Calgary to Seattle extent
+    _markProgrammatic();
     map.fitBounds([
       [47.5, -123.5],
       [51.2, -113.5],
@@ -84,6 +87,7 @@ const TripMap = (() => {
   function fitToRoute(waypoints) {
     if (!waypoints || waypoints.length < 2) return;
     const latlngs = waypoints.map(w => [w.lat, w.lon]);
+    _markProgrammatic();
     map.fitBounds(latlngs, { padding: [40, 40], maxZoom: 10 });
   }
 
@@ -142,6 +146,7 @@ const TripMap = (() => {
 
     const marker = markers.get(camId);
     // Ensure the marker is visible (uncluster if needed)
+    _markProgrammatic();
     markerCluster.zoomToShowLayer(marker, () => {
       const el = marker.getElement?.();
       if (el) el.classList.add('active');
@@ -185,6 +190,7 @@ const TripMap = (() => {
       }
       if (latlngs.length === 0) return;
 
+      _markProgrammatic();
       if (latlngs.length === 1) {
         map.flyTo(latlngs[0], 10, { duration: 0.6 });
       } else {
@@ -199,6 +205,7 @@ const TripMap = (() => {
   }
 
   function panTo(lat, lon, zoom) {
+    _markProgrammatic();
     map.flyTo([lat, lon], zoom || 12, {
       duration: 0.8,
       easeLinearity: 0.25,
@@ -217,6 +224,28 @@ const TripMap = (() => {
         zIndexOffset: 10000,
       }).addTo(map);
     }
+  }
+
+  function _markProgrammatic() {
+    _lastProgrammaticMove = Date.now();
+  }
+
+  function onViewportChange(callback) {
+    _viewportCallback = callback;
+    map.on('moveend', () => {
+      if (!_viewportCallback) return;
+      // Skip if this move was triggered programmatically (within last 1s)
+      if (Date.now() - _lastProgrammaticMove < 1000) return;
+
+      const bounds = map.getBounds();
+      const visibleIds = [];
+      for (const [id, marker] of markers) {
+        if (bounds.contains(marker.getLatLng())) {
+          visibleIds.push(id);
+        }
+      }
+      _viewportCallback(visibleIds);
+    });
   }
 
   function invalidateSize() {
@@ -240,6 +269,7 @@ const TripMap = (() => {
     panTo,
     showUserLocation,
     invalidateSize,
+    onViewportChange,
     getMap,
   };
 })();
