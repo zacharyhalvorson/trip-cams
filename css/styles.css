@@ -1294,6 +1294,7 @@ button {
 
   .route-selector {
     max-width: 600px;
+    margin: 0 auto;
   }
 
   .map-container {
@@ -1314,9 +1315,9 @@ button {
     position: fixed;
     top: var(--header-height);
     left: 50%;
-    right: 0;
+    right: 12px;
     bottom: 0;
-    border-radius: 0;
+    border-radius: 20px 20px 0 0;
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
   }
 
@@ -1331,24 +1332,6 @@ button {
 
   .map-toggle {
     display: none;
-  }
-
-  .camera-card {
-    flex-direction: row;
-    gap: 12px;
-    padding: 12px;
-    overflow: visible;
-  }
-
-  .camera-thumb {
-    width: 140px;
-    height: 105px;
-    aspect-ratio: auto;
-    border-radius: 12px;
-  }
-
-  .camera-info {
-    padding: 0;
   }
 
   .modal {
@@ -1371,11 +1354,6 @@ button {
 @media (min-width: 1200px) {
   .camera-list {
     padding: 0 16px;
-  }
-
-  .camera-thumb {
-    width: 160px;
-    height: 120px;
   }
 }
 
