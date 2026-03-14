@@ -16,6 +16,7 @@ const App = (() => {
   let currentModalCamera = null;
   let sheetExpanded = false; // true when sheet is pulled up (20vh map)
   let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
+  let userLocation = null; // { lat, lon, nearestStop } when geolocation available
 
   const PREFS_KEY = 'tripcams_prefs';
   const ROUTE_DATA_KEY = 'tripcams_route_data';
@@ -96,7 +97,6 @@ const App = (() => {
     dom.toInput = $('#toInput');
     dom.toValue = $('#toValue');
     dom.swapBtn = $('#swapBtn');
-    dom.locateBtn = $('#locateBtn');
     dom.dropdown = $('#dropdown');
     dom.dropdownOverlay = $('#dropdownOverlay');
     dom.dropdownSearch = $('#dropdownSearch');
@@ -195,6 +195,22 @@ const App = (() => {
     updateRouteDisplay();
     updateRoute();
 
+    // Detect user location so it can appear in the picker
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          TripMap.showUserLocation(latitude, longitude);
+          const nearest = Cameras.nearestStop(latitude, longitude, allStops);
+          if (nearest) {
+            userLocation = { lat: latitude, lon: longitude, nearestStop: nearest };
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
     // Online/offline detection
     updateOnlineStatus();
 
@@ -209,7 +225,6 @@ const App = (() => {
     dom.fromInput.addEventListener('click', () => openDropdown('from'));
     dom.toInput.addEventListener('click', () => openDropdown('to'));
     dom.swapBtn.addEventListener('click', swapStops);
-    dom.locateBtn.addEventListener('click', locateUser);
 
     // Dropdown
     dom.dropdownOverlay.addEventListener('click', closeDropdown);
@@ -302,6 +317,18 @@ const App = (() => {
     const q = query.toLowerCase().trim();
     const history = loadHistory();
 
+    // Show "Current Location" option when geolocation is available
+    if (userLocation && (!q || 'current location'.includes(q) ||
+        userLocation.nearestStop.name.toLowerCase().includes(q))) {
+      const li = document.createElement('li');
+      li.tabIndex = 0;
+      li.className = 'location-option';
+      li.innerHTML = `<svg class="location-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="city-name">Current Location</span><span class="city-region ${userLocation.nearestStop.region}">${userLocation.nearestStop.name}</span>`;
+      li.addEventListener('click', snapToCurrentLocation);
+      li.addEventListener('keydown', (e) => { if (e.key === 'Enter') snapToCurrentLocation(); });
+      dom.dropdownList.appendChild(li);
+    }
+
     // Show recent section when not searching and there's history
     if (!q && history.length > 0) {
       const recentStops = history
@@ -382,6 +409,36 @@ const App = (() => {
     TripMap.fitToRoute(currentWaypoints);
   }
 
+  // ── Snap to Current Location ─────────────────────────────────
+
+  function snapToCurrentLocation() {
+    if (!userLocation) return;
+    closeDropdown();
+
+    // Find nearest camera in the current filtered list
+    const { lat, lon } = userLocation;
+    let nearestCard = null;
+    let minDist = Infinity;
+
+    const cards = dom.cameraList.querySelectorAll('.camera-card');
+    for (const card of cards) {
+      const cam = filteredCameras.find(c => c.id === card.dataset.id);
+      if (!cam) continue;
+      const d = Cameras.haversine(lat, lon, cam.lat, cam.lon);
+      if (d < minDist) {
+        minDist = d;
+        nearestCard = card;
+      }
+    }
+
+    if (nearestCard) {
+      nearestCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      nearestCard.classList.add('highlighted');
+      setTimeout(() => nearestCard.classList.remove('highlighted'), 2000);
+      TripMap.panTo(userLocation.lat, userLocation.lon);
+    }
+  }
+
   // ── URL Hash ─────────────────────────────────────────────────
 
   function parseHash() {
@@ -400,34 +457,6 @@ const App = (() => {
     }
   }
 
-  // ── Geolocation ──────────────────────────────────────────────
-
-  function locateUser() {
-    if (!navigator.geolocation) return;
-
-    dom.locateBtn.style.color = 'var(--green)';
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        TripMap.showUserLocation(latitude, longitude);
-
-        // Snap to nearest stop for "from"
-        const nearest = Cameras.nearestStop(latitude, longitude, allStops);
-        fromStop = nearest;
-        if (nearest) saveHistory(nearest.id);
-        updateRouteDisplay();
-        updateRoute();
-        applyFilters();
-        updateHash();
-        savePrefs();
-      },
-      (err) => {
-        console.warn('Geolocation failed:', err.message);
-        dom.locateBtn.style.color = '';
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }
 
   // ── Camera Loading ───────────────────────────────────────────
 

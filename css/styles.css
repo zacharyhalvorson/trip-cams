@@ -137,24 +137,6 @@ button {
   min-width: 0;
 }
 
-.locate-btn {
-  width: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: var(--green-subtle);
-  color: var(--green);
-  flex-shrink: 0;
-  transition: transform var(--duration-fast) var(--spring),
-              background var(--duration-fast);
-}
-
-.locate-btn:active {
-  transform: scale(0.9);
-  background: rgba(45, 184, 75, 0.2);
-}
-
 .route-input {
   flex: 1;
   min-width: 0;
@@ -342,6 +324,23 @@ button {
 .city-region.AB { background: rgba(245, 158, 11, 0.15); color: var(--ab-color); }
 .city-region.BC { background: rgba(59, 130, 246, 0.15); color: var(--bc-color); }
 .city-region.WA { background: rgba(139, 92, 246, 0.15); color: var(--wa-color); }
+
+.location-option {
+  background: var(--green-subtle);
+}
+
+.location-option .location-icon {
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.location-option .city-region {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  background: none;
+  padding: 0;
+}
 
 .dropdown-section-header {
   font-size: 11px;
