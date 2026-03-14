@@ -83,7 +83,34 @@ const TripMap = (() => {
     routeLine = L.polyline(latlngs, ROUTE_STYLE).addTo(map);
   }
 
+  const ROUTE_CACHE_KEY = 'tripcams_route_geo';
+  const ROUTE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+  function getRouteCache(cacheKey) {
+    try {
+      const stored = localStorage.getItem(`${ROUTE_CACHE_KEY}_${cacheKey}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Date.now() - parsed.ts < ROUTE_CACHE_DURATION) {
+          return parsed.data;
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
+  function setRouteCache(cacheKey, data) {
+    try {
+      localStorage.setItem(`${ROUTE_CACHE_KEY}_${cacheKey}`, JSON.stringify({ data, ts: Date.now() }));
+    } catch (e) { /* quota exceeded, ignore */ }
+  }
+
   async function fetchRoadGeometry(waypoints) {
+    // Build a cache key from waypoint coordinates
+    const cacheKey = waypoints.map(w => `${w.lat.toFixed(3)},${w.lon.toFixed(3)}`).join('|');
+    const cached = getRouteCache(cacheKey);
+    if (cached) return cached;
+
     // OSRM expects coordinates as lon,lat pairs separated by semicolons
     const coords = waypoints.map(w => `${w.lon},${w.lat}`).join(';');
     const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
@@ -92,7 +119,9 @@ const TripMap = (() => {
     const data = await resp.json();
     if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('No route found');
     // GeoJSON coordinates are [lon, lat], Leaflet needs [lat, lon]
-    return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    const latlngs = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    setRouteCache(cacheKey, latlngs);
+    return latlngs;
   }
 
   async function drawRoute(waypoints) {

@@ -17,6 +17,40 @@ const App = (() => {
   let sheetExpanded = false; // true when sheet is pulled up (20vh map)
   let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
 
+  const PREFS_KEY = 'tripcams_prefs';
+  const ROUTE_DATA_KEY = 'tripcams_route_data';
+
+  function savePrefs() {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({
+        from: fromStop?.id || null,
+        to: toStop?.id || null,
+        region: activeRegion,
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
+  function loadPrefs() {
+    try {
+      const stored = localStorage.getItem(PREFS_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) { return null; }
+  }
+
+  function saveRouteData(data) {
+    try {
+      localStorage.setItem(ROUTE_DATA_KEY, JSON.stringify({ data, ts: Date.now() }));
+    } catch (e) { /* ignore */ }
+  }
+
+  function loadRouteData() {
+    try {
+      const stored = localStorage.getItem(ROUTE_DATA_KEY);
+      if (stored) return JSON.parse(stored).data;
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
   // DOM refs
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -85,13 +119,21 @@ const App = (() => {
       }
     });
 
-    // Load route data
+    // Load route data — try localStorage first for instant startup
+    const cachedRouteData = loadRouteData();
+    if (cachedRouteData) {
+      routeData = cachedRouteData;
+    }
     try {
       const resp = await fetch('data/route.json');
       routeData = await resp.json();
+      saveRouteData(routeData);
     } catch (e) {
-      console.error('Failed to load route data:', e);
-      return;
+      if (!routeData) {
+        console.error('Failed to load route data:', e);
+        return;
+      }
+      // Using cached route data — fine for offline
     }
 
     allStops = Cameras.getAllStops(routeData);
@@ -99,7 +141,21 @@ const App = (() => {
     // Parse URL hash for initial stops
     parseHash();
 
-    // Set defaults if not from hash
+    // If no hash, restore saved preferences
+    if (!fromStop && !toStop) {
+      const prefs = loadPrefs();
+      if (prefs) {
+        if (prefs.from) fromStop = allStops.find(s => s.id === prefs.from) || null;
+        if (prefs.to) toStop = allStops.find(s => s.id === prefs.to) || null;
+        if (prefs.region && ['all', 'AB', 'BC', 'WA'].includes(prefs.region)) {
+          activeRegion = prefs.region;
+          for (const p of $$('.pill')) p.classList.toggle('active', p.dataset.region === activeRegion);
+          dom.filterBtn.classList.toggle('has-filter', activeRegion !== 'all');
+        }
+      }
+    }
+
+    // Set defaults if not from hash or prefs
     if (!fromStop) fromStop = allStops.find(s => s.id === 'calgary') || allStops[0];
     if (!toStop) toStop = allStops.find(s => s.id === 'seattle') || allStops[allStops.length - 1];
 
@@ -142,6 +198,7 @@ const App = (() => {
         dom.filterBtn.classList.toggle('has-filter', activeRegion !== 'all');
         applyFilters();
         closeFilterModal();
+        savePrefs();
       });
     }
 
@@ -230,6 +287,7 @@ const App = (() => {
     updateRoute();
     loadCameras();
     updateHash();
+    savePrefs();
   }
 
   function swapStops() {
@@ -240,6 +298,7 @@ const App = (() => {
     updateRoute();
     applyFilters();
     updateHash();
+    savePrefs();
 
     // Animate the swap button
     dom.swapBtn.style.transform = 'scale(0.85) rotate(180deg)';
@@ -294,6 +353,7 @@ const App = (() => {
         updateRoute();
         applyFilters();
         updateHash();
+        savePrefs();
       },
       (err) => {
         console.warn('Geolocation failed:', err.message);

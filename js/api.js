@@ -21,18 +21,20 @@ const API = (() => {
   // Simple in-memory + localStorage cache
   const memCache = {};
 
+  // Returns { data, fresh } where fresh indicates whether data is within TTL
   function getCachedData(region) {
-    if (memCache[region] && Date.now() - memCache[region].ts < CACHE_DURATION) {
-      return memCache[region].data;
+    // Check memory cache first
+    if (memCache[region]) {
+      const fresh = Date.now() - memCache[region].ts < CACHE_DURATION;
+      return { data: memCache[region].data, fresh, ts: memCache[region].ts };
     }
     try {
       const stored = localStorage.getItem(`${CACHE_KEY}_${region}`);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Date.now() - parsed.ts < CACHE_DURATION) {
-          memCache[region] = parsed;
-          return parsed.data;
-        }
+        memCache[region] = parsed;
+        const fresh = Date.now() - parsed.ts < CACHE_DURATION;
+        return { data: parsed.data, fresh, ts: parsed.ts };
       }
     } catch (e) { /* ignore */ }
     return null;
@@ -81,76 +83,81 @@ const API = (() => {
     }
   }
 
-  async function fetchAlberta() {
-    const cached = getCachedData('AB');
-    if (cached) return { data: Cameras.normalizeAlberta(cached), fromCache: true };
+  // Generic fetch for a region: stale-while-revalidate pattern
+  // Returns stale data immediately if available, refreshes in background
+  async function fetchRegion(region, endpoint, normalizer) {
+    const cached = getCachedData(region);
 
+    // Fresh cache — return immediately
+    if (cached && cached.fresh) {
+      return { data: normalizer(cached.data), fromCache: true };
+    }
+
+    // Stale cache exists — return it but refresh in background
+    if (cached && !cached.fresh) {
+      // Fire-and-forget background refresh
+      refreshRegion(region, endpoint).catch(() => {});
+      return { data: normalizer(cached.data), fromCache: true, stale: true };
+    }
+
+    // No cache at all — must fetch
     try {
-      // Try direct first, then proxy
-      let raw;
-      try {
-        raw = await fetchDirect(ENDPOINTS.AB);
-      } catch (e) {
-        raw = await fetchWithProxy(ENDPOINTS.AB);
-      }
-      setCachedData('AB', raw);
-      return { data: Cameras.normalizeAlberta(raw), fromCache: false };
+      const raw = await fetchWithRetry(endpoint);
+      setCachedData(region, raw);
+      return { data: normalizer(raw), fromCache: false };
     } catch (e) {
-      console.warn('Alberta API failed, using fallback:', e.message);
-      const fallback = await fetchFallback('AB');
-      if (fallback) return { data: Cameras.normalizeAlberta(fallback), fromCache: true };
+      console.warn(`${region} API failed, using fallback:`, e.message);
+      const fallback = await fetchFallback(region);
+      if (fallback) {
+        // Save fallback as cache so it's available next time
+        setCachedData(region, fallback);
+        return { data: normalizer(fallback), fromCache: true };
+      }
       return { data: [], fromCache: true, error: e.message };
     }
   }
 
-  async function fetchBC() {
-    const cached = getCachedData('BC');
-    if (cached) return { data: Cameras.normalizeBC(cached), fromCache: true };
-
+  // Try direct, then proxy, with shorter timeouts for poor connections
+  async function fetchWithRetry(url) {
     try {
-      let raw;
-      try {
-        raw = await fetchDirect(ENDPOINTS.BC);
-      } catch (e) {
-        raw = await fetchWithProxy(ENDPOINTS.BC);
-      }
-      setCachedData('BC', raw);
-      return { data: Cameras.normalizeBC(raw), fromCache: false };
+      return await fetchDirect(url);
     } catch (e) {
-      console.warn('BC API failed, using fallback:', e.message);
-      const fallback = await fetchFallback('BC');
-      if (fallback) return { data: Cameras.normalizeBC(fallback), fromCache: true };
-      return { data: [], fromCache: true, error: e.message };
+      return await fetchWithProxy(url);
     }
+  }
+
+  // Background refresh — updates cache silently
+  async function refreshRegion(region, endpoint) {
+    try {
+      const raw = await fetchWithRetry(endpoint);
+      setCachedData(region, raw);
+    } catch (e) {
+      // Silent fail — stale data remains in cache
+    }
+  }
+
+  async function fetchAlberta() {
+    return fetchRegion('AB', ENDPOINTS.AB, Cameras.normalizeAlberta);
+  }
+
+  async function fetchBC() {
+    return fetchRegion('BC', ENDPOINTS.BC, Cameras.normalizeBC);
   }
 
   async function fetchWA() {
     if (!WSDOT_ACCESS_CODE) {
-      // No API key configured, use fallback only
+      const cached = getCachedData('WA');
+      if (cached) return { data: Cameras.normalizeWA(cached.data), fromCache: true };
       const fallback = await fetchFallback('WA');
-      if (fallback) return { data: Cameras.normalizeWA(fallback), fromCache: true };
+      if (fallback) {
+        setCachedData('WA', fallback);
+        return { data: Cameras.normalizeWA(fallback), fromCache: true };
+      }
       return { data: [], fromCache: true, error: 'No WSDOT access code configured' };
     }
 
-    const cached = getCachedData('WA');
-    if (cached) return { data: Cameras.normalizeWA(cached), fromCache: true };
-
-    try {
-      const url = `${ENDPOINTS.WA}?AccessCode=${WSDOT_ACCESS_CODE}`;
-      let raw;
-      try {
-        raw = await fetchDirect(url);
-      } catch (e) {
-        raw = await fetchWithProxy(url);
-      }
-      setCachedData('WA', raw);
-      return { data: Cameras.normalizeWA(raw), fromCache: false };
-    } catch (e) {
-      console.warn('WSDOT API failed, using fallback:', e.message);
-      const fallback = await fetchFallback('WA');
-      if (fallback) return { data: Cameras.normalizeWA(fallback), fromCache: true };
-      return { data: [], fromCache: true, error: e.message };
-    }
+    const url = `${ENDPOINTS.WA}?AccessCode=${WSDOT_ACCESS_CODE}`;
+    return fetchRegion('WA', url, Cameras.normalizeWA);
   }
 
   async function fetchAll() {
