@@ -469,6 +469,30 @@ button {
   box-shadow: 0 0 0 4px rgba(45, 184, 75, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Expanded sheet: dim non-active markers, make active ones pop as green */
+.sheet-expanded .camera-marker {
+  width: 10px !important;
+  height: 10px !important;
+  margin-left: -5px !important;
+  margin-top: -5px !important;
+  opacity: 0.45;
+  border-width: 1.5px;
+  transition: all var(--duration-fast) var(--spring-bounce);
+}
+
+.sheet-expanded .camera-marker.active {
+  width: 20px !important;
+  height: 20px !important;
+  margin-left: -10px !important;
+  margin-top: -10px !important;
+  background: var(--green) !important;
+  opacity: 1;
+  border: 2.5px solid white;
+  transform: none;
+  box-shadow: 0 0 0 5px rgba(45, 184, 75, 0.25), 0 2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 10000 !important;
+}
+
 .marker-cluster {
   background: rgba(45, 184, 75, 0.2) !important;
 }

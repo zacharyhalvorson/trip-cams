@@ -133,6 +133,15 @@ const App = (() => {
     registerServiceWorker();
     TripMap.init();
 
+    // On wide layouts, the expanded view is always active
+    function syncExpandedClass() {
+      if (isWideLayout()) {
+        document.body.classList.add('sheet-expanded');
+      }
+    }
+    syncExpandedClass();
+    window.addEventListener('resize', syncExpandedClass);
+
     // Sync camera list when user pans/zooms the map
     TripMap.onViewportChange((visibleIds) => {
       if (visibleIds.length === 0) return;
@@ -944,6 +953,7 @@ const App = (() => {
         mapContainer.style.height = '20vh';
         sheet.style.top = `calc(${headerHeight}px + 20vh)`;
         sheetExpanded = true;
+        document.body.classList.add('sheet-expanded');
         TripMap.invalidateSize();
         // After map resizes, fit to currently visible cards
         setTimeout(() => {
@@ -965,6 +975,7 @@ const App = (() => {
         mapContainer.style.height = '50vh';
         sheet.style.top = `calc(${headerHeight}px + 50vh)`;
         sheetExpanded = false;
+        document.body.classList.remove('sheet-expanded');
         TripMap.invalidateSize();
         setTimeout(() => TripMap.fitToRoute(currentWaypoints), 200);
       }
