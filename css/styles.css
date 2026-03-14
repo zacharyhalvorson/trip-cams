@@ -491,6 +491,29 @@ button {
   color: var(--text-secondary);
 }
 
+.map-center-btn {
+  position: absolute;
+  bottom: 60px;
+  right: 12px;
+  z-index: 500;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--spring),
+              background var(--duration-fast);
+}
+
+.map-center-btn:active {
+  transform: scale(0.9);
+}
+
 .map-toggle {
   position: absolute;
   bottom: 12px;

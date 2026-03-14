@@ -36,6 +36,7 @@ const App = (() => {
     dom.dropdownList = $('#dropdownList');
     dom.mapContainer = $('#mapContainer');
     dom.mapToggle = $('#mapToggle');
+    dom.centerMapBtn = $('#centerMapBtn');
     dom.sheet = $('#sheet');
     dom.sheetHandle = $('#sheetHandle');
     dom.cameraList = $('#cameraList');
@@ -123,6 +124,7 @@ const App = (() => {
 
     // Map toggle
     dom.mapToggle.addEventListener('click', toggleMap);
+    dom.centerMapBtn.addEventListener('click', centerMap);
 
     // Filter modal
     dom.filterBtn.addEventListener('click', openFilterModal);
@@ -514,6 +516,12 @@ const App = (() => {
   function toggleMap() {
     dom.mapContainer.classList.toggle('collapsed');
     TripMap.invalidateSize();
+  }
+
+  function centerMap() {
+    if (currentWaypoints.length > 0) {
+      TripMap.fitToRoute(currentWaypoints);
+    }
   }
 
   // ── Filter Modal ─────────────────────────────────────────────
