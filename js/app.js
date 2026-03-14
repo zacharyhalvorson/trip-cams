@@ -309,12 +309,11 @@ const App = (() => {
     if (userLocation && (!q || 'current location'.includes(q) ||
         userLocation.nearestStop.name.toLowerCase().includes(q))) {
       const li = document.createElement('li');
-      li.dataset.id = userLocation.nearestStop.id;
       li.tabIndex = 0;
       li.className = 'location-option';
       li.innerHTML = `<svg class="location-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="city-name">Current Location</span><span class="city-region ${userLocation.nearestStop.region}">${userLocation.nearestStop.name}</span>`;
-      li.addEventListener('click', () => selectStop(userLocation.nearestStop.id));
-      li.addEventListener('keydown', (e) => { if (e.key === 'Enter') selectStop(userLocation.nearestStop.id); });
+      li.addEventListener('click', snapToCurrentLocation);
+      li.addEventListener('keydown', (e) => { if (e.key === 'Enter') snapToCurrentLocation(); });
       dom.dropdownList.appendChild(li);
     }
 
@@ -396,6 +395,36 @@ const App = (() => {
     currentWaypoints = Cameras.findRoute(routeData, fromStop.id, toStop.id);
     TripMap.drawRoute(currentWaypoints);
     TripMap.fitToRoute(currentWaypoints);
+  }
+
+  // ── Snap to Current Location ─────────────────────────────────
+
+  function snapToCurrentLocation() {
+    if (!userLocation) return;
+    closeDropdown();
+
+    // Find nearest camera in the current filtered list
+    const { lat, lon } = userLocation;
+    let nearestCard = null;
+    let minDist = Infinity;
+
+    const cards = dom.cameraList.querySelectorAll('.camera-card');
+    for (const card of cards) {
+      const cam = filteredCameras.find(c => c.id === card.dataset.id);
+      if (!cam) continue;
+      const d = Cameras.haversine(lat, lon, cam.lat, cam.lon);
+      if (d < minDist) {
+        minDist = d;
+        nearestCard = card;
+      }
+    }
+
+    if (nearestCard) {
+      nearestCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      nearestCard.classList.add('highlighted');
+      setTimeout(() => nearestCard.classList.remove('highlighted'), 2000);
+      TripMap.panTo(userLocation.lat, userLocation.lon);
+    }
   }
 
   // ── URL Hash ─────────────────────────────────────────────────
