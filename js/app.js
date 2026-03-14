@@ -425,16 +425,34 @@ const App = (() => {
     allCameras = [];
     let anyFromCache = false;
 
+    // Show loading state instead of confusing "0 cameras"
+    dom.countNumber.textContent = '';
+    dom.countNumber.classList.add('loading');
+    dom.cameraCount.classList.add('loading');
+
+    // Determine which regions the route passes through
+    const neededRegions = new Set();
+    if (currentWaypoints.length > 0) {
+      for (const wp of currentWaypoints) {
+        neededRegions.add(wp.region);
+      }
+    }
+
     await API.fetchProgressive((region, result) => {
       if (result.fromCache) anyFromCache = true;
       allCameras = allCameras.concat(result.data || []);
       applyFilters();
-    });
+      // Once first results arrive, remove loading state on count
+      dom.countNumber.classList.remove('loading');
+      dom.cameraCount.classList.remove('loading');
+    }, neededRegions.size > 0 ? neededRegions : null);
 
     if (anyFromCache && !navigator.onLine) {
       dom.offlineBanner.classList.add('visible');
     }
     dom.skeletonList.classList.add('hidden');
+    dom.countNumber.classList.remove('loading');
+    dom.cameraCount.classList.remove('loading');
   }
 
   async function refreshCameras() {
