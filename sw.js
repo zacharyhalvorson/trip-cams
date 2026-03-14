@@ -26,9 +26,12 @@ const CDN_ASSETS = [
 
 const API_CACHE = 'tripcams-api-v1';
 const IMAGE_CACHE = 'tripcams-images-v1';
+const TILE_CACHE = 'tripcams-tiles-v1';
 const API_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const IMAGE_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+const IMAGE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes (was 2 — too short for road trips)
+const TILE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (map tiles rarely change)
 const IMAGE_CACHE_LIMIT = 200;
+const TILE_CACHE_LIMIT = 500;
 
 // Install — precache static assets
 self.addEventListener('install', (event) => {
@@ -49,7 +52,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE && k !== IMAGE_CACHE)
+        keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE && k !== IMAGE_CACHE && k !== TILE_CACHE)
           .map((k) => caches.delete(k))
       )
     )
@@ -70,6 +73,18 @@ self.addEventListener('fetch', (event) => {
   // Camera images
   if (isCameraImage(url)) {
     event.respondWith(cacheFirstWithExpiry(event.request, IMAGE_CACHE, IMAGE_CACHE_DURATION));
+    return;
+  }
+
+  // Map tiles — cache-first (tiles rarely change, critical for offline)
+  if (isMapTile(url)) {
+    event.respondWith(cacheFirstWithExpiry(event.request, TILE_CACHE, TILE_CACHE_DURATION, TILE_CACHE_LIMIT));
+    return;
+  }
+
+  // OSRM routing API — cache for 24 hours (road geometry doesn't change often)
+  if (isRoutingApi(url)) {
+    event.respondWith(networkFirstWithCache(event.request, API_CACHE, API_CACHE_DURATION));
     return;
   }
 
@@ -107,7 +122,7 @@ async function networkFirstWithCache(request, cacheName, maxAge) {
 
 // ── Strategy: Cache first with expiry ──────────────────────────
 
-async function cacheFirstWithExpiry(request, cacheName, maxAge) {
+async function cacheFirstWithExpiry(request, cacheName, maxAge, cacheLimit) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
 
@@ -129,7 +144,7 @@ async function cacheFirstWithExpiry(request, cacheName, maxAge) {
         headers,
       });
       cache.put(request, cloned);
-      trimCache(cacheName, IMAGE_CACHE_LIMIT);
+      trimCache(cacheName, cacheLimit || IMAGE_CACHE_LIMIT);
     }
     return response;
   } catch (e) {
@@ -172,6 +187,18 @@ function isCameraImage(url) {
     (host.includes('wsdot') && path.includes('camera')) ||
     (host.includes('images.wsdot.wa.gov'))
   );
+}
+
+function isMapTile(url) {
+  const host = url.hostname.toLowerCase();
+  return host.includes('basemaps.cartocdn.com') ||
+    host.includes('tile.openstreetmap.org') ||
+    host.includes('tiles.stadiamaps.com') ||
+    (host.includes('unpkg.com') && url.pathname.includes('leaflet') && url.pathname.endsWith('.png'));
+}
+
+function isRoutingApi(url) {
+  return url.hostname.includes('router.project-osrm.org');
 }
 
 async function trimCache(cacheName, maxItems) {

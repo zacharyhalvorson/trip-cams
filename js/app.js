@@ -21,6 +21,7 @@ const App = (() => {
   const ROUTE_DATA_KEY = 'tripcams_route_data';
   const HISTORY_KEY = 'tripcams_destination_history';
   const MAX_HISTORY = 8;
+  const INITIAL_RENDER_BATCH = 12; // Cards to render immediately; rest deferred
 
   function savePrefs() {
     try {
@@ -70,6 +71,17 @@ const App = (() => {
       if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     } catch (e) { /* ignore */ }
+  }
+
+  // Connection quality detection
+  function isSlowConnection() {
+    if (!navigator.onLine) return true;
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!conn) return false;
+    // saveData flag or effective type is slow
+    if (conn.saveData) return true;
+    if (conn.effectiveType && ['slow-2g', '2g', '3g'].includes(conn.effectiveType)) return true;
+    return false;
   }
 
   // DOM refs
@@ -495,8 +507,59 @@ const App = (() => {
     cards.forEach(c => c.remove());
   }
 
+  function buildCameraCard(cam, index) {
+    const card = document.createElement('div');
+    card.dataset.id = cam.id;
+    card.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
+
+    const hasImage = cam.imageUrl && cam.status === 'active';
+
+    if (hasImage) {
+      card.className = 'camera-card';
+      const imgSrc = cam.thumbnailUrl || cam.imageUrl;
+      card.innerHTML = `
+        <div class="camera-thumb">
+          <img src="img/placeholder.svg"
+               data-src="${imgSrc}"
+               alt="${cam.name}"
+               width="640" height="360"
+               loading="lazy">
+          <span class="thumb-region ${cam.region}">${cam.region}</span>
+        </div>
+        <div class="camera-info">
+          <div class="camera-name">${cam.name}</div>
+          <div class="camera-highway">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+              <circle cx="12" cy="9" r="2.5"/>
+            </svg>
+            ${cam.highway}${cam.direction ? ' · ' + cam.direction : ''}
+          </div>
+          <div class="camera-status">
+            <span class="status-dot"></span>
+            Live
+          </div>
+        </div>
+      `;
+      card.addEventListener('click', () => openModal(cam));
+    } else {
+      card.className = 'camera-card camera-card-disabled';
+      card.innerHTML = `
+        <span class="thumb-region ${cam.region}">${cam.region}</span>
+        <span class="camera-name">${cam.name}</span>
+        <span class="camera-highway-inline">${cam.highway}${cam.direction ? ' · ' + cam.direction : ''}</span>
+        <span class="camera-status offline"><span class="status-dot"></span>Offline</span>
+      `;
+    }
+
+    return card;
+  }
+
+  let _pendingRenderRaf = null;
+
   function renderCameraList(cameras) {
     removeCameraCards();
+    if (_pendingRenderRaf) { cancelAnimationFrame(_pendingRenderRaf); _pendingRenderRaf = null; }
 
     if (cameras.length === 0) {
       const empty = document.createElement('div');
@@ -513,62 +576,44 @@ const App = (() => {
       return;
     }
 
+    // Render first batch immediately for fast initial paint
+    const firstBatch = cameras.slice(0, INITIAL_RENDER_BATCH);
+    const restBatch = cameras.slice(INITIAL_RENDER_BATCH);
+
     const fragment = document.createDocumentFragment();
-
-    cameras.forEach((cam, i) => {
-      const card = document.createElement('div');
-      card.dataset.id = cam.id;
-      card.style.animationDelay = `${Math.min(i * 30, 300)}ms`;
-
-      const hasImage = cam.imageUrl && cam.status === 'active';
-
-      if (hasImage) {
-        card.className = 'camera-card';
-        const imgSrc = cam.thumbnailUrl || cam.imageUrl;
-        card.innerHTML = `
-          <div class="camera-thumb">
-            <img src="img/placeholder.svg"
-                 data-src="${imgSrc}"
-                 alt="${cam.name}"
-                 width="640" height="360"
-                 loading="lazy">
-            <span class="thumb-region ${cam.region}">${cam.region}</span>
-          </div>
-          <div class="camera-info">
-            <div class="camera-name">${cam.name}</div>
-            <div class="camera-highway">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                <circle cx="12" cy="9" r="2.5"/>
-              </svg>
-              ${cam.highway}${cam.direction ? ' · ' + cam.direction : ''}
-            </div>
-            <div class="camera-status">
-              <span class="status-dot"></span>
-              Live
-            </div>
-          </div>
-        `;
-        card.addEventListener('click', () => openModal(cam));
-      } else {
-        card.className = 'camera-card camera-card-disabled';
-        card.innerHTML = `
-          <span class="thumb-region ${cam.region}">${cam.region}</span>
-          <span class="camera-name">${cam.name}</span>
-          <span class="camera-highway-inline">${cam.highway}${cam.direction ? ' · ' + cam.direction : ''}</span>
-          <span class="camera-status offline"><span class="status-dot"></span>Offline</span>
-        `;
-      }
-
-      fragment.appendChild(card);
-    });
-
+    firstBatch.forEach((cam, i) => fragment.appendChild(buildCameraCard(cam, i)));
     dom.cameraList.appendChild(fragment);
 
-    // Lazy load images with IntersectionObserver
+    // Defer remaining cards to next frame so UI is interactive sooner
+    if (restBatch.length > 0) {
+      _pendingRenderRaf = requestAnimationFrame(() => {
+        _pendingRenderRaf = null;
+        const restFragment = document.createDocumentFragment();
+        restBatch.forEach((cam, i) =>
+          restFragment.appendChild(buildCameraCard(cam, INITIAL_RENDER_BATCH + i))
+        );
+        dom.cameraList.appendChild(restFragment);
+
+        // Re-setup observers for the new cards
+        setupLazyLoading();
+        setupScrollTracking(cameras);
+        prefetchUpcoming(cameras);
+      });
+    }
+
+    // Setup observers for first batch immediately
     setupLazyLoading();
-    // Highlight markers as cards scroll into view
     setupScrollTracking(cameras);
+    prefetchUpcoming(cameras);
+  }
+
+  // Time-bucketed cache key: same URL reused within each bucket so SW cache hits.
+  // On good connections: 5-min buckets. On slow/offline: 30-min buckets.
+  function cacheBustUrl(src) {
+    const bucketMs = isSlowConnection() ? 30 * 60 * 1000 : 5 * 60 * 1000;
+    const bucket = Math.floor(Date.now() / bucketMs) * bucketMs;
+    const sep = src.includes('?') ? '&' : '?';
+    return src + sep + '_t=' + bucket;
   }
 
   function setupLazyLoading() {
@@ -578,26 +623,55 @@ const App = (() => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const img = entry.target;
-            const src = img.dataset.src;
-            const sep = src.includes('?') ? '&' : '?';
-            img.src = src + sep + '_t=' + Date.now();
+            img.src = cacheBustUrl(img.dataset.src);
             img.removeAttribute('data-src');
             img.onerror = () => { img.src = 'img/placeholder.svg'; };
             observer.unobserve(img);
           }
         }
-      }, { rootMargin: '200px' });
+      }, { rootMargin: getLazyMargin() });
 
       images.forEach(img => observer.observe(img));
     } else {
       // Fallback: load all
       images.forEach(img => {
-        const src = img.dataset.src;
-        const sep = src.includes('?') ? '&' : '?';
-        img.src = src + sep + '_t=' + Date.now();
+        img.src = cacheBustUrl(img.dataset.src);
         img.removeAttribute('data-src');
       });
     }
+  }
+
+  // Lazy-load rootMargin: load more ahead on fast connections, less on slow
+  function getLazyMargin() {
+    if (isSlowConnection()) return '50px';   // Conservative on slow connections
+    return '400px';                           // Aggressive prefetch on fast connections
+  }
+
+  // ── Prefetch upcoming camera images into SW cache ────────────
+
+  function prefetchUpcoming(cameras) {
+    // On slow connections, skip prefetching to save bandwidth
+    if (isSlowConnection()) return;
+
+    // Prefetch thumbnails for the first N cameras that haven't loaded yet
+    const PREFETCH_COUNT = 6;
+    const activeCameras = cameras
+      .filter(c => c.imageUrl && c.status === 'active')
+      .slice(0, INITIAL_RENDER_BATCH + PREFETCH_COUNT);
+
+    // Use low-priority link prefetch hints for cameras just beyond the viewport
+    const existing = document.querySelectorAll('link[data-prefetch-cam]');
+    existing.forEach(el => el.remove());
+
+    activeCameras.slice(INITIAL_RENDER_BATCH).forEach(cam => {
+      const src = cam.thumbnailUrl || cam.imageUrl;
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.as = 'image';
+      link.href = cacheBustUrl(src);
+      link.dataset.prefetchCam = '1';
+      document.head.appendChild(link);
+    });
   }
 
   // ── Scroll Tracking (highlight markers for visible cards) ────
@@ -815,7 +889,7 @@ const App = (() => {
       img.onerror = () => {
         dom.modalLoading.classList.remove('active');
       };
-      // Cache-bust
+      // Cache-bust (use Date.now() here — modal auto-refresh should show latest)
       const sep = cam.imageUrl.includes('?') ? '&' : '?';
       img.src = cam.imageUrl + sep + '_t=' + Date.now();
     }, 15000); // every 15 seconds
