@@ -10,6 +10,7 @@
         { "id": "golden", "name": "Golden", "region": "BC", "lat": 51.2981, "lon": -116.9675 },
         { "id": "revelstoke", "name": "Revelstoke", "region": "BC", "lat": 50.9981, "lon": -118.1957 },
         { "id": "sicamous", "name": "Sicamous", "region": "BC", "lat": 50.8362, "lon": -118.9765 },
+        { "id": "salmon-arm", "name": "Salmon Arm", "region": "BC", "lat": 50.7022, "lon": -119.2722 },
         { "id": "kamloops", "name": "Kamloops", "region": "BC", "lat": 50.6745, "lon": -120.3273 },
         { "id": "merritt", "name": "Merritt", "region": "BC", "lat": 50.1113, "lon": -120.7862 },
         { "id": "hope", "name": "Hope", "region": "BC", "lat": 49.3858, "lon": -121.4419 },
