@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Live highway cameras along your driving route — Calgary to Seattle and beyond">
+  <title>Trip Cams</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" crossorigin="">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header" id="header">
+    <div class="header-title">
+      <svg class="header-logo" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      <h1>Trip Cams</h1>
+    </div>
+    <div class="route-selector">
+      <div class="route-input-group">
+        <button class="locate-btn" id="locateBtn" title="Use my location" aria-label="Use my location">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+          </svg>
+        </button>
+        <div class="route-input" id="fromInput" tabindex="0" role="combobox" aria-label="Starting point">
+          <span class="route-label">From</span>
+          <span class="route-value" id="fromValue">Calgary, AB</span>
+        </div>
+      </div>
+      <button class="swap-btn" id="swapBtn" title="Swap start and end" aria-label="Swap start and end">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 4v16M7 20l-4-4M7 20l4-4M17 20V4M17 4l-4 4M17 4l4 4"/>
+        </svg>
+      </button>
+      <div class="route-input" id="toInput" tabindex="0" role="combobox" aria-label="Destination">
+        <span class="route-label">To</span>
+        <span class="route-value" id="toValue">Seattle, WA</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Location Dropdown -->
+  <div class="dropdown-overlay" id="dropdownOverlay"></div>
+  <div class="dropdown" id="dropdown">
+    <div class="dropdown-header">
+      <input type="text" class="dropdown-search" id="dropdownSearch" placeholder="Search cities..." autocomplete="off">
+    </div>
+    <ul class="dropdown-list" id="dropdownList"></ul>
+  </div>
+
+  <!-- Map -->
+  <div class="map-container" id="mapContainer">
+    <div id="map"></div>
+    <button class="map-toggle" id="mapToggle" aria-label="Toggle map">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/>
+        <path d="M8 2v16M16 6v16"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Bottom Sheet -->
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle" id="sheetHandle">
+      <div class="sheet-handle-bar"></div>
+    </div>
+
+    <!-- Camera count + actions -->
+    <div class="camera-count" id="cameraCount">
+      <div class="count-text">
+        <span class="count-number" id="countNumber">0</span>
+        <span class="count-label">cameras along route</span>
+      </div>
+      <div class="count-actions">
+        <button class="action-btn" id="filterBtn" title="Filter by region" aria-label="Filter by region">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+        </button>
+        <button class="action-btn" id="refreshBtn" title="Refresh cameras" aria-label="Refresh cameras">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"/>
+            <path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Camera List -->
+    <div class="camera-list" id="cameraList">
+      <!-- Loading skeleton -->
+      <div class="skeleton-list" id="skeletonList">
+        <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-text"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-text"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-text"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-text"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-text"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2 id="modalName"></h2>
+          <p id="modalInfo"></p>
+        </div>
+        <button class="modal-close" id="modalClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-image-container">
+        <img id="modalImage" alt="Camera view" width="640" height="480">
+        <div class="modal-loading" id="modalLoading">
+          <div class="spinner"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <label class="auto-refresh-toggle">
+          <input type="checkbox" id="autoRefreshToggle">
+          <span class="toggle-slider"></span>
+          <span class="toggle-label">Auto-refresh</span>
+        </label>
+        <span class="last-refreshed" id="lastRefreshed"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Modal -->
+  <div class="filter-overlay" id="filterOverlay">
+    <div class="filter-modal" id="filterModal">
+      <div class="filter-modal-header">
+        <h3>Filter Cameras</h3>
+        <button class="modal-close" id="filterClose" aria-label="Close filters">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="filter-modal-body">
+        <p class="filter-section-label">Region</p>
+        <div class="filter-pills">
+          <button class="pill active" data-region="all">All</button>
+          <button class="pill" data-region="AB">Alberta</button>
+          <button class="pill" data-region="BC">British Columbia</button>
+          <button class="pill" data-region="WA">Washington</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offline Banner -->
+  <div class="offline-banner" id="offlineBanner">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+    </svg>
+    <span>Showing cached data</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+  <script src="js/cameras.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

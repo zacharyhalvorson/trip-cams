@@ -1,0 +1,56 @@
+{
+  "routes": {
+    "northern": {
+      "name": "Northern Route (Hwy 1 / Coquihalla)",
+      "stops": [
+        { "id": "calgary", "name": "Calgary", "region": "AB", "lat": 51.0447, "lon": -114.0719 },
+        { "id": "canmore", "name": "Canmore", "region": "AB", "lat": 51.0884, "lon": -115.3579 },
+        { "id": "banff", "name": "Banff", "region": "AB", "lat": 51.1784, "lon": -115.5708 },
+        { "id": "lake-louise", "name": "Lake Louise", "region": "AB", "lat": 51.4254, "lon": -116.1773 },
+        { "id": "golden", "name": "Golden", "region": "BC", "lat": 51.2981, "lon": -116.9675 },
+        { "id": "revelstoke", "name": "Revelstoke", "region": "BC", "lat": 50.9981, "lon": -118.1957 },
+        { "id": "sicamous", "name": "Sicamous", "region": "BC", "lat": 50.8362, "lon": -118.9765 },
+        { "id": "kamloops", "name": "Kamloops", "region": "BC", "lat": 50.6745, "lon": -120.3273 },
+        { "id": "merritt", "name": "Merritt", "region": "BC", "lat": 50.1113, "lon": -120.7862 },
+        { "id": "hope", "name": "Hope", "region": "BC", "lat": 49.3858, "lon": -121.4419 },
+        { "id": "chilliwack", "name": "Chilliwack", "region": "BC", "lat": 49.1579, "lon": -121.9514 },
+        { "id": "abbotsford", "name": "Abbotsford", "region": "BC", "lat": 49.0504, "lon": -122.3045 },
+        { "id": "surrey", "name": "Surrey", "region": "BC", "lat": 49.1913, "lon": -122.8490 },
+        { "id": "vancouver", "name": "Vancouver", "region": "BC", "lat": 49.2827, "lon": -123.1207 },
+        { "id": "blaine", "name": "Blaine", "region": "WA", "lat": 48.9937, "lon": -122.7474 },
+        { "id": "bellingham", "name": "Bellingham", "region": "WA", "lat": 48.7519, "lon": -122.4787 },
+        { "id": "mount-vernon", "name": "Mount Vernon", "region": "WA", "lat": 48.4213, "lon": -122.3343 },
+        { "id": "everett", "name": "Everett", "region": "WA", "lat": 47.9790, "lon": -122.2021 },
+        { "id": "seattle", "name": "Seattle", "region": "WA", "lat": 47.6062, "lon": -122.3321 }
+      ]
+    },
+    "southern": {
+      "name": "Southern Route (Hwy 3 / Crowsnest)",
+      "stops": [
+        { "id": "calgary", "name": "Calgary", "region": "AB", "lat": 51.0447, "lon": -114.0719 },
+        { "id": "okotoks", "name": "Okotoks", "region": "AB", "lat": 50.7286, "lon": -113.9749 },
+        { "id": "nanton", "name": "Nanton", "region": "AB", "lat": 50.3517, "lon": -113.7730 },
+        { "id": "fort-macleod", "name": "Fort Macleod", "region": "AB", "lat": 49.7236, "lon": -113.4049 },
+        { "id": "lethbridge", "name": "Lethbridge", "region": "AB", "lat": 49.6935, "lon": -112.8418 },
+        { "id": "fernie", "name": "Fernie", "region": "BC", "lat": 49.5040, "lon": -115.0631 },
+        { "id": "cranbrook", "name": "Cranbrook", "region": "BC", "lat": 49.5097, "lon": -115.7693 },
+        { "id": "creston", "name": "Creston", "region": "BC", "lat": 49.0955, "lon": -116.5137 },
+        { "id": "castlegar", "name": "Castlegar", "region": "BC", "lat": 49.3263, "lon": -117.6593 },
+        { "id": "osoyoos", "name": "Osoyoos", "region": "BC", "lat": 49.0329, "lon": -119.4691 },
+        { "id": "keremeos", "name": "Keremeos", "region": "BC", "lat": 49.2024, "lon": -119.8292 },
+        { "id": "princeton", "name": "Princeton", "region": "BC", "lat": 49.4586, "lon": -120.5064 },
+        { "id": "hope", "name": "Hope", "region": "BC", "lat": 49.3858, "lon": -121.4419 },
+        { "id": "chilliwack", "name": "Chilliwack", "region": "BC", "lat": 49.1579, "lon": -121.9514 },
+        { "id": "abbotsford", "name": "Abbotsford", "region": "BC", "lat": 49.0504, "lon": -122.3045 },
+        { "id": "surrey", "name": "Surrey", "region": "BC", "lat": 49.1913, "lon": -122.8490 },
+        { "id": "vancouver", "name": "Vancouver", "region": "BC", "lat": 49.2827, "lon": -123.1207 },
+        { "id": "blaine", "name": "Blaine", "region": "WA", "lat": 48.9937, "lon": -122.7474 },
+        { "id": "bellingham", "name": "Bellingham", "region": "WA", "lat": 48.7519, "lon": -122.4787 },
+        { "id": "mount-vernon", "name": "Mount Vernon", "region": "WA", "lat": 48.4213, "lon": -122.3343 },
+        { "id": "everett", "name": "Everett", "region": "WA", "lat": 47.9790, "lon": -122.2021 },
+        { "id": "seattle", "name": "Seattle", "region": "WA", "lat": 47.6062, "lon": -122.3321 }
+      ]
+    }
+  },
+  "corridorBuffer": 5
+}

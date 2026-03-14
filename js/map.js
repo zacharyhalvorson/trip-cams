@@ -1,0 +1,214 @@
+/* =============================================================
+   map.js — Leaflet map, markers, route polyline, geolocation
+   ============================================================= */
+
+const TripMap = (() => {
+  let map = null;
+  let markerCluster = null;
+  let routeLine = null;
+  let markers = new Map(); // camera id -> marker
+  let userLocationMarker = null;
+  let activeMarkerId = null;
+
+  const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
+
+  function isDarkMode() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function init() {
+    map = L.map('map', {
+      zoomControl: false,
+      attributionControl: false,
+    });
+
+    const tileLayer = L.tileLayer(isDarkMode() ? TILE_DARK : TILE_LIGHT, {
+      attribution: TILE_ATTR,
+      maxZoom: 18,
+      subdomains: 'abcd',
+    }).addTo(map);
+
+    // Switch tiles when color scheme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      tileLayer.setUrl(e.matches ? TILE_DARK : TILE_LIGHT);
+    });
+
+    // Zoom control on the right
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // Attribution bottom-right
+    L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
+
+    // Marker cluster group
+    markerCluster = L.markerClusterGroup({
+      maxClusterRadius: 40,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `<div>${count}</div>`,
+          className: 'marker-cluster',
+          iconSize: L.point(36, 36),
+        });
+      },
+    });
+    map.addLayer(markerCluster);
+
+    // Default view: Calgary to Seattle extent
+    map.fitBounds([
+      [47.5, -123.5],
+      [51.2, -113.5],
+    ], { padding: [20, 20] });
+  }
+
+  function drawRoute(waypoints) {
+    if (routeLine) {
+      map.removeLayer(routeLine);
+    }
+    if (!waypoints || waypoints.length < 2) return;
+
+    const latlngs = waypoints.map(w => [w.lat, w.lon]);
+    routeLine = L.polyline(latlngs, {
+      color: '#2DB84B',
+      weight: 3,
+      opacity: 0.5,
+      dashArray: '8, 8',
+      lineCap: 'round',
+    }).addTo(map);
+  }
+
+  function fitToRoute(waypoints) {
+    if (!waypoints || waypoints.length < 2) return;
+    const latlngs = waypoints.map(w => [w.lat, w.lon]);
+    map.fitBounds(latlngs, { padding: [40, 40], maxZoom: 10 });
+  }
+
+  function createMarkerIcon(region) {
+    return L.divIcon({
+      className: `camera-marker ${region}`,
+      iconSize: [14, 14],
+    });
+  }
+
+  function setMarkers(cameras, onMarkerClick) {
+    markerCluster.clearLayers();
+    markers.clear();
+    activeMarkerId = null;
+
+    for (const cam of cameras) {
+      if (cam.status === 'inactive') continue;
+
+      const marker = L.marker([cam.lat, cam.lon], {
+        icon: createMarkerIcon(cam.region),
+      });
+
+      // Popup with thumbnail
+      const thumbUrl = cam.thumbnailUrl || cam.imageUrl;
+      const popupHtml = `
+        <div class="popup-content">
+          ${thumbUrl ? `<img src="${thumbUrl}" alt="${cam.name}" loading="lazy" width="200" height="150" onerror="this.style.display='none'">` : ''}
+          <div class="popup-name">${cam.name}</div>
+          <div class="popup-highway">${cam.highway}${cam.direction ? ' · ' + cam.direction : ''}</div>
+        </div>
+      `;
+      marker.bindPopup(popupHtml, {
+        maxWidth: 220,
+        className: 'camera-popup',
+      });
+
+      marker.on('click', () => {
+        if (onMarkerClick) onMarkerClick(cam);
+      });
+
+      markers.set(cam.id, marker);
+      markerCluster.addLayer(marker);
+    }
+  }
+
+  function highlightMarker(camId) {
+    // Remove previous highlight
+    if (activeMarkerId && markers.has(activeMarkerId)) {
+      const prev = markers.get(activeMarkerId);
+      const prevEl = prev.getElement?.();
+      if (prevEl) prevEl.classList.remove('active');
+    }
+
+    activeMarkerId = camId;
+    if (!markers.has(camId)) return;
+
+    const marker = markers.get(camId);
+    // Ensure the marker is visible (uncluster if needed)
+    markerCluster.zoomToShowLayer(marker, () => {
+      const el = marker.getElement?.();
+      if (el) el.classList.add('active');
+    });
+  }
+
+  let activeVisibleIds = new Set();
+
+  function highlightVisible(visibleIds) {
+    // Remove old highlights
+    for (const id of activeVisibleIds) {
+      if (!visibleIds.has(id) && markers.has(id)) {
+        const el = markers.get(id).getElement?.();
+        if (el) el.classList.remove('active');
+      }
+    }
+    // Add new highlights
+    for (const id of visibleIds) {
+      if (markers.has(id)) {
+        const el = markers.get(id).getElement?.();
+        if (el) el.classList.add('active');
+      }
+    }
+    activeVisibleIds = new Set(visibleIds);
+  }
+
+  function panTo(lat, lon, zoom) {
+    map.flyTo([lat, lon], zoom || 12, {
+      duration: 0.8,
+      easeLinearity: 0.25,
+    });
+  }
+
+  function showUserLocation(lat, lon) {
+    if (userLocationMarker) {
+      userLocationMarker.setLatLng([lat, lon]);
+    } else {
+      userLocationMarker = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: 'user-location-marker',
+          iconSize: [16, 16],
+        }),
+        zIndexOffset: 10000,
+      }).addTo(map);
+    }
+  }
+
+  function invalidateSize() {
+    if (map) {
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+  }
+
+  function getMap() {
+    return map;
+  }
+
+  return {
+    init,
+    drawRoute,
+    fitToRoute,
+    setMarkers,
+    highlightMarker,
+    highlightVisible,
+    panTo,
+    showUserLocation,
+    invalidateSize,
+    getMap,
+  };
+})();
