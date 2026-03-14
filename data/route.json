@@ -31,7 +31,7 @@
         { "id": "okotoks", "name": "Okotoks", "region": "AB", "lat": 50.7286, "lon": -113.9749 },
         { "id": "nanton", "name": "Nanton", "region": "AB", "lat": 50.3517, "lon": -113.7730 },
         { "id": "fort-macleod", "name": "Fort Macleod", "region": "AB", "lat": 49.7236, "lon": -113.4049 },
-        { "id": "lethbridge", "name": "Lethbridge", "region": "AB", "lat": 49.6935, "lon": -112.8418 },
+        { "id": "crowsnest-pass", "name": "Crowsnest Pass", "region": "AB", "lat": 49.5958, "lon": -114.4128 },
         { "id": "fernie", "name": "Fernie", "region": "BC", "lat": 49.5040, "lon": -115.0631 },
         { "id": "kimberley", "name": "Kimberley", "region": "BC", "lat": 49.6698, "lon": -115.9774 },
         { "id": "cranbrook", "name": "Cranbrook", "region": "BC", "lat": 49.5097, "lon": -115.7693 },
@@ -50,6 +50,17 @@
         { "id": "mount-vernon", "name": "Mount Vernon", "region": "WA", "lat": 48.4213, "lon": -122.3343 },
         { "id": "everett", "name": "Everett", "region": "WA", "lat": 47.9790, "lon": -122.2021 },
         { "id": "seattle", "name": "Seattle", "region": "WA", "lat": 47.6062, "lon": -122.3321 }
+      ]
+    }
+    },
+    "lethbridge": {
+      "name": "Lethbridge Spur (Hwy 2 / Hwy 3 East)",
+      "stops": [
+        { "id": "calgary", "name": "Calgary", "region": "AB", "lat": 51.0447, "lon": -114.0719 },
+        { "id": "okotoks", "name": "Okotoks", "region": "AB", "lat": 50.7286, "lon": -113.9749 },
+        { "id": "nanton", "name": "Nanton", "region": "AB", "lat": 50.3517, "lon": -113.7730 },
+        { "id": "fort-macleod", "name": "Fort Macleod", "region": "AB", "lat": 49.7236, "lon": -113.4049 },
+        { "id": "lethbridge", "name": "Lethbridge", "region": "AB", "lat": 49.6935, "lon": -112.8418 }
       ]
     }
   },

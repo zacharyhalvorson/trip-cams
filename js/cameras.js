@@ -232,15 +232,23 @@ const Cameras = (() => {
   }
 
   // Find the best route between two stops
+  // When both stops exist in multiple routes, pick the one with fewest intermediate stops
   function findRoute(routeData, fromId, toId) {
+    let bestSegment = null;
     for (const route of Object.values(routeData.routes)) {
       const fromIdx = route.stops.findIndex(s => s.id === fromId);
       const toIdx = route.stops.findIndex(s => s.id === toId);
       if (fromIdx !== -1 && toIdx !== -1) {
         const start = Math.min(fromIdx, toIdx);
         const end = Math.max(fromIdx, toIdx);
-        return route.stops.slice(start, end + 1);
+        const segment = route.stops.slice(start, end + 1);
+        if (!bestSegment || segment.length < bestSegment.length) {
+          bestSegment = segment;
+        }
       }
+    }
+    if (bestSegment) {
+      return bestSegment;
     }
     // Fallback: use northern route
     const northern = routeData.routes.northern.stops;
