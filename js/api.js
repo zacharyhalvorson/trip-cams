@@ -192,5 +192,15 @@ const API = (() => {
     }
   }
 
-  return { fetchAll, clearCache };
+  // Fetch regions progressively, calling onRegion as each completes
+  async function fetchProgressive(onRegion) {
+    const fetchers = [
+      fetchAlberta().then(r => { onRegion('AB', r); return r; }),
+      fetchBC().then(r => { onRegion('BC', r); return r; }),
+      fetchWA().then(r => { onRegion('WA', r); return r; }),
+    ];
+    await Promise.allSettled(fetchers);
+  }
+
+  return { fetchAll, fetchProgressive, clearCache };
 })();

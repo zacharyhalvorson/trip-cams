@@ -161,10 +161,14 @@ const App = (() => {
 
     updateRouteDisplay();
     updateRoute();
-    await loadCameras();
 
     // Online/offline detection
     updateOnlineStatus();
+
+    // Defer camera loading until after first paint so the UI is interactive sooner
+    requestAnimationFrame(() => {
+      loadCameras();
+    });
   }
 
   function bindEvents() {
@@ -250,25 +254,30 @@ const App = (() => {
     renderDropdownList(dom.dropdownSearch.value);
   }
 
+  // Pre-build dropdown items once; show/hide on filter instead of rebuilding DOM
+  let dropdownItems = []; // { li, stop }
+
+  function buildDropdownItems() {
+    const fragment = document.createDocumentFragment();
+    dropdownItems = allStops.map(stop => {
+      const li = document.createElement('li');
+      li.dataset.id = stop.id;
+      li.tabIndex = 0;
+      li.innerHTML = `<span class="city-name">${stop.name}</span><span class="city-region ${stop.region}">${stop.region}</span>`;
+      li.addEventListener('click', () => selectStop(stop.id));
+      li.addEventListener('keydown', (e) => { if (e.key === 'Enter') selectStop(stop.id); });
+      fragment.appendChild(li);
+      return { li, stop, searchText: (stop.name + ' ' + stop.region).toLowerCase() };
+    });
+    dom.dropdownList.appendChild(fragment);
+  }
+
   function renderDropdownList(query) {
+    if (dropdownItems.length === 0) buildDropdownItems();
+
     const q = query.toLowerCase().trim();
-    const filtered = q
-      ? allStops.filter(s => s.name.toLowerCase().includes(q) || s.region.toLowerCase().includes(q))
-      : allStops;
-
-    dom.dropdownList.innerHTML = filtered.map(stop => `
-      <li data-id="${stop.id}" tabindex="0">
-        <span class="city-name">${stop.name}</span>
-        <span class="city-region ${stop.region}">${stop.region}</span>
-      </li>
-    `).join('');
-
-    // Bind clicks
-    for (const li of dom.dropdownList.querySelectorAll('li')) {
-      li.addEventListener('click', () => selectStop(li.dataset.id));
-      li.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') selectStop(li.dataset.id);
-      });
+    for (const { li, searchText } of dropdownItems) {
+      li.style.display = (!q || searchText.includes(q)) ? '' : 'none';
     }
   }
 
@@ -368,15 +377,18 @@ const App = (() => {
   async function loadCameras() {
     dom.skeletonList.classList.remove('hidden');
     removeCameraCards();
+    allCameras = [];
+    let anyFromCache = false;
 
-    const { cameras, anyFromCache } = await API.fetchAll();
-    allCameras = cameras;
+    await API.fetchProgressive((region, result) => {
+      if (result.fromCache) anyFromCache = true;
+      allCameras = allCameras.concat(result.data || []);
+      applyFilters();
+    });
 
     if (anyFromCache && !navigator.onLine) {
       dom.offlineBanner.classList.add('visible');
     }
-
-    applyFilters();
     dom.skeletonList.classList.add('hidden');
   }
 
