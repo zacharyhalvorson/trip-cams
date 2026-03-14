@@ -48,10 +48,17 @@ const API = (() => {
     } catch (e) { /* quota exceeded, ignore */ }
   }
 
+  // Longer timeouts on slow connections to give them a chance to complete
+  function getTimeouts() {
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const slow = conn && (conn.saveData || ['slow-2g', '2g', '3g'].includes(conn.effectiveType));
+    return { direct: slow ? 20000 : 10000, proxy: slow ? 25000 : 15000 };
+  }
+
   async function fetchWithProxy(url, options = {}) {
     const proxied = CORS_PROXY + encodeURIComponent(url);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), getTimeouts().proxy);
     try {
       const resp = await fetch(proxied, { ...options, signal: controller.signal });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -63,7 +70,7 @@ const API = (() => {
 
   async function fetchDirect(url, options = {}) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), getTimeouts().direct);
     try {
       const resp = await fetch(url, { ...options, signal: controller.signal });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
