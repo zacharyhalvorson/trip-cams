@@ -33,6 +33,7 @@
         { "id": "fort-macleod", "name": "Fort Macleod", "region": "AB", "lat": 49.7236, "lon": -113.4049 },
         { "id": "lethbridge", "name": "Lethbridge", "region": "AB", "lat": 49.6935, "lon": -112.8418 },
         { "id": "fernie", "name": "Fernie", "region": "BC", "lat": 49.5040, "lon": -115.0631 },
+        { "id": "kimberley", "name": "Kimberley", "region": "BC", "lat": 49.6698, "lon": -115.9774 },
         { "id": "cranbrook", "name": "Cranbrook", "region": "BC", "lat": 49.5097, "lon": -115.7693 },
         { "id": "creston", "name": "Creston", "region": "BC", "lat": 49.0955, "lon": -116.5137 },
         { "id": "castlegar", "name": "Castlegar", "region": "BC", "lat": 49.3263, "lon": -117.6593 },
