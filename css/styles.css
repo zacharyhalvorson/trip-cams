@@ -740,6 +740,11 @@ button {
   background: rgba(45, 184, 75, 0.06);
 }
 
+.camera-card.focused {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(45, 184, 75, 0.2);
+}
+
 .camera-thumb {
   width: 100%;
   aspect-ratio: 16 / 9;

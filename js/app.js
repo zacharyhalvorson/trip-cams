@@ -16,6 +16,7 @@ const App = (() => {
   let currentModalCamera = null;
   let sheetExpanded = false; // true when sheet is pulled up (20vh map)
   let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
+  let _focusedCameraId = null; // the camera card currently centered in the list
   let userLocation = null; // { lat, lon, nearestStop } when geolocation available
 
   const PREFS_KEY = 'tripcams_prefs';
@@ -764,9 +765,18 @@ const App = (() => {
   // ── Scroll Tracking (highlight markers for visible cards) ────
 
   let scrollTrackingObserver = null;
+  let _scrollTrackingHandler = null;
+
+  function isWideLayout() {
+    return window.matchMedia('(min-width: 769px)').matches;
+  }
 
   function setupScrollTracking(cameras) {
     if (scrollTrackingObserver) scrollTrackingObserver.disconnect();
+    if (_scrollTrackingHandler) {
+      dom.cameraList.removeEventListener('scroll', _scrollTrackingHandler);
+      _scrollTrackingHandler = null;
+    }
     if (!('IntersectionObserver' in window)) return;
 
     const visibleIds = new Set();
@@ -794,6 +804,57 @@ const App = (() => {
 
     const cards = dom.cameraList.querySelectorAll('.camera-card');
     cards.forEach(card => scrollTrackingObserver.observe(card));
+
+    // Focused camera tracking: find the card closest to center and sync map
+    let focusDebounce = null;
+    _scrollTrackingHandler = () => {
+      if (_mapInitiatedScroll) return;
+      clearTimeout(focusDebounce);
+      focusDebounce = setTimeout(() => {
+        updateFocusedCamera();
+      }, 150);
+    };
+    dom.cameraList.addEventListener('scroll', _scrollTrackingHandler, { passive: true });
+  }
+
+  function updateFocusedCamera() {
+    if (_mapInitiatedScroll) return;
+    // Only auto-pan on wide layout, or narrow with sheet expanded
+    if (!isWideLayout() && !sheetExpanded) return;
+
+    const listRect = dom.cameraList.getBoundingClientRect();
+    const centerY = listRect.top + listRect.height / 2;
+    const cards = dom.cameraList.querySelectorAll('.camera-card');
+
+    let closestCard = null;
+    let closestDist = Infinity;
+
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      const cardCenter = rect.top + rect.height / 2;
+      const dist = Math.abs(cardCenter - centerY);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestCard = card;
+      }
+    }
+
+    if (!closestCard) return;
+    const camId = closestCard.dataset.id;
+    if (camId === _focusedCameraId) return;
+
+    // Update focused state
+    const prevFocused = dom.cameraList.querySelector('.camera-card.focused');
+    if (prevFocused) prevFocused.classList.remove('focused');
+    closestCard.classList.add('focused');
+    _focusedCameraId = camId;
+
+    // Find the camera data and pan map to it
+    const cam = filteredCameras.find(c => c.id === camId);
+    if (cam) {
+      TripMap.highlightMarker(camId);
+      TripMap.panTo(cam.lat, cam.lon, isWideLayout() ? 10 : undefined);
+    }
   }
 
   // ── Map Interactions ─────────────────────────────────────────
