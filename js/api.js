@@ -193,12 +193,19 @@ const API = (() => {
   }
 
   // Fetch regions progressively, calling onRegion as each completes
-  async function fetchProgressive(onRegion) {
-    const fetchers = [
-      fetchAlberta().then(r => { onRegion('AB', r); return r; }),
-      fetchBC().then(r => { onRegion('BC', r); return r; }),
-      fetchWA().then(r => { onRegion('WA', r); return r; }),
+  // If neededRegions is provided (a Set), only fetch those regions
+  async function fetchProgressive(onRegion, neededRegions) {
+    const all = [
+      { key: 'AB', fn: fetchAlberta },
+      { key: 'BC', fn: fetchBC },
+      { key: 'WA', fn: fetchWA },
     ];
+    const toFetch = neededRegions
+      ? all.filter(r => neededRegions.has(r.key))
+      : all;
+    const fetchers = toFetch.map(({ key, fn }) =>
+      fn().then(r => { onRegion(key, r); return r; })
+    );
     await Promise.allSettled(fetchers);
   }
 

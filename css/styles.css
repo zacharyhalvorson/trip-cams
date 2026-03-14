@@ -670,6 +670,33 @@ button {
   font-weight: 500;
 }
 
+/* Loading state for camera count */
+.camera-count.loading .count-number::after {
+  content: '';
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  border-radius: 8px;
+  background: linear-gradient(110deg, var(--navy) 30%, var(--surface-raised) 50%, var(--navy) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  vertical-align: middle;
+}
+
+.camera-count.loading .count-label::after {
+  content: 'Loading cameras…';
+}
+
+.camera-count.loading .count-label {
+  font-size: 0; /* hide original text */
+}
+
+.camera-count.loading .count-label::after {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 /* =============================================================
    Camera List
    ============================================================= */
