@@ -541,7 +541,7 @@ button {
 
 .map-center-btn {
   position: absolute;
-  bottom: 60px;
+  bottom: 72px;
   right: 12px;
   z-index: 500;
   width: 40px;
@@ -564,7 +564,7 @@ button {
 
 .map-toggle {
   position: absolute;
-  bottom: 12px;
+  bottom: 24px;
   right: 12px;
   z-index: 500;
   width: 40px;
