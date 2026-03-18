@@ -635,9 +635,6 @@ button {
   padding: 10px 0 8px;
   cursor: grab;
   border-radius: 20px 20px 0 0;
-  background: linear-gradient(to bottom, var(--navy) 40%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
 }
 
 .sheet-handle-bar {
