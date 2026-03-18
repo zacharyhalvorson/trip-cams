@@ -617,7 +617,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 0 8px;
+  padding: 10px 0 8px;
   cursor: grab;
   flex-shrink: 0;
 }
