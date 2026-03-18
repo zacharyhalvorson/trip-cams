@@ -624,12 +624,20 @@ button {
 }
 
 .sheet-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 10px 0 8px;
   cursor: grab;
-  flex-shrink: 0;
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(to bottom, var(--navy) 40%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .sheet-handle-bar {
@@ -649,7 +657,7 @@ button {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 12px;
+  padding: 28px 12px 0;
   padding-bottom: calc(var(--safe-bottom) + 20px);
 }
 
