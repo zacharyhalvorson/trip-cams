@@ -623,17 +623,6 @@ const App = (() => {
 
   // ── Camera List Rendering ────────────────────────────────────
 
-  function formatAge(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return '';
-    const mins = Math.round((Date.now() - d) / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  }
-
   function removeCameraCards() {
     const cards = dom.cameraList.querySelectorAll('.camera-card, .empty-state');
     cards.forEach(c => c.remove());
@@ -662,7 +651,6 @@ const App = (() => {
             <div class="camera-name">${cam.name}</div>
             <div class="camera-status">
               <span class="status-dot"></span>
-              ${cam.lastUpdated ? formatAge(cam.lastUpdated) : ''}
             </div>
           </div>
         </div>
@@ -722,7 +710,6 @@ const App = (() => {
             <div class="camera-name">${cam.name}${showDir ? ` <span class="cluster-direction">${dir}</span>` : ''}</div>
             <div class="camera-status">
               <span class="status-dot"></span>
-              ${cam.lastUpdated ? formatAge(cam.lastUpdated) : ''}
             </div>
           </div>
         </div>
