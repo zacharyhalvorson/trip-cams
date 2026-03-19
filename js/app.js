@@ -16,6 +16,7 @@ const App = (() => {
   let currentModalCamera = null;
   let sheetRevealed = false; // true once the sheet has been revealed (one-way)
   let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
+  let _userHasInteractedWithMap = false; // true after first user pan/zoom on the map
   let _focusedCameraId = null; // the camera card currently centered in the list
   let userLocation = null; // { lat, lon, nearestStop } when geolocation available
 
@@ -144,8 +145,18 @@ const App = (() => {
     syncLayout();
     window.addEventListener('resize', syncLayout);
 
+    // Mark when user first interacts with the map (pan/zoom)
+    for (const evt of ['mousedown', 'touchstart', 'wheel']) {
+      dom.mapContainer.addEventListener(evt, () => {
+        _userHasInteractedWithMap = true;
+      }, { once: true, passive: true });
+    }
+
     // Sync camera list when user pans/zooms the map
+    // Skip until user has actually interacted with the map to avoid
+    // auto-scrolling the list away from the top on initial load.
     TripMap.onViewportChange((visibleIds) => {
+      if (!_userHasInteractedWithMap) return;
       if (visibleIds.length === 0) return;
 
       // Find the first camera card (in list/route order) that's in the viewport
