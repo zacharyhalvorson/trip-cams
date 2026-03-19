@@ -287,6 +287,48 @@ const TripMap = (() => {
     });
   }
 
+  // Pan without changing zoom — for scroll-tracking so we avoid the
+  // flyTo zoom-out-then-zoom-in arc animation on every camera change.
+  function smoothPanTo(lat, lon) {
+    _markProgrammatic();
+    map.panTo([lat, lon], { animate: true, duration: 0.3 });
+  }
+
+  // Highlight a marker visually (CSS class only) without calling
+  // zoomToShowLayer, which would change zoom during scroll tracking.
+  function highlightMarkerVisual(camId) {
+    if (activeMarkerId && markers.has(activeMarkerId)) {
+      const prev = markers.get(activeMarkerId);
+      const prevEl = prev.getElement?.();
+      if (prevEl) prevEl.classList.remove('active');
+    }
+    activeMarkerId = camId;
+    if (!markers.has(camId)) return;
+    const marker = markers.get(camId);
+    const el = marker.getElement?.();
+    if (el) el.classList.add('active');
+  }
+
+  // Zoom to fit visible cameras instantly (no animation) so Safari
+  // doesn't show a CSS-transform scale effect while the user scrolls.
+  function zoomToVisible(visibleIds) {
+    if (!visibleIds || visibleIds.size === 0) return;
+    const latlngs = [];
+    for (const id of visibleIds) {
+      if (markers.has(id)) {
+        latlngs.push(markers.get(id).getLatLng());
+      }
+    }
+    if (latlngs.length === 0) return;
+    _markProgrammatic();
+    if (latlngs.length === 1) {
+      map.setView(latlngs[0], 10, { animate: false });
+    } else {
+      const bounds = L.latLngBounds(latlngs);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11, animate: false });
+    }
+  }
+
   function showUserLocation(lat, lon) {
     if (userLocationMarker) {
       userLocationMarker.setLatLng([lat, lon]);
@@ -352,9 +394,12 @@ const TripMap = (() => {
     fitToRoute,
     setMarkers,
     highlightMarker,
+    highlightMarkerVisual,
     highlightVisible,
     fitToVisible,
+    zoomToVisible,
     panTo,
+    smoothPanTo,
     showUserLocation,
     invalidateSize,
     onViewportChange,

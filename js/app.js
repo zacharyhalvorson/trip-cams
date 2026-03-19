@@ -763,6 +763,7 @@ const App = (() => {
 
   let scrollTrackingObserver = null;
   let _scrollTrackingHandler = null;
+  let _hasZoomedForScroll = false;    // true once initial zoom-to-visible is done (one-time)
 
   function isWideLayout() {
     return window.matchMedia('(min-width: 769px)').matches;
@@ -797,10 +798,30 @@ const App = (() => {
     const cards = dom.cameraList.querySelectorAll('.camera-card');
     cards.forEach(card => scrollTrackingObserver.observe(card));
 
-    // Focused camera tracking: find the card closest to center and sync map
+    // Focused camera tracking: find the card closest to center and sync map.
+    // On very first scroll, instantly zoom to fit visible cameras (no animation
+    // to avoid Safari's CSS-transform scaling). After that, only ever pan.
     let focusDebounce = null;
     _scrollTrackingHandler = () => {
       if (_mapInitiatedScroll) return;
+      if (!isWideLayout() && !sheetRevealed) return;
+
+      if (!_hasZoomedForScroll) {
+        _hasZoomedForScroll = true;
+        // One-time: instantly zoom to fit cameras visible in the list
+        const listRect = dom.cameraList.getBoundingClientRect();
+        const visIds = new Set();
+        for (const card of dom.cameraList.querySelectorAll('.camera-card')) {
+          const rect = card.getBoundingClientRect();
+          if (rect.top < listRect.bottom && rect.bottom > listRect.top) {
+            visIds.add(card.dataset.id);
+          }
+        }
+        if (visIds.size > 0) {
+          TripMap.zoomToVisible(visIds);
+        }
+      }
+
       clearTimeout(focusDebounce);
       focusDebounce = setTimeout(() => {
         updateFocusedCamera();
@@ -841,11 +862,11 @@ const App = (() => {
     closestCard.classList.add('focused');
     _focusedCameraId = camId;
 
-    // Find the camera data and pan map to it
+    // Find the camera data and pan map to it (no zoom change)
     const cam = filteredCameras.find(c => c.id === camId);
     if (cam) {
-      TripMap.highlightMarker(camId);
-      TripMap.panTo(cam.lat, cam.lon, isWideLayout() ? 10 : undefined);
+      TripMap.highlightMarkerVisual(camId);
+      TripMap.smoothPanTo(cam.lat, cam.lon);
     }
   }
 
