@@ -440,7 +440,7 @@ const App = (() => {
     currentRouteGeometry = null; // Reset until OSRM geometry loads
     _lastFilteredIds = ''; // Reset so filters re-render for new route
     TripMap.drawRoute(currentWaypoints);
-    TripMap.fitToRoute(currentWaypoints);
+    TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
 
     // Fetch precise OSRM road geometry for filtering
     TripMap.fetchRoadGeometry(currentWaypoints)
@@ -1004,6 +1004,11 @@ const App = (() => {
     return window.matchMedia('(min-width: 769px)').matches;
   }
 
+  /** Bottom padding for fitToRoute so the route clears the peeking sheet. */
+  function sheetPeekPadding() {
+    return (!isWideLayout() && !sheetRevealed) ? 180 : 40;
+  }
+
   function setupScrollTracking(cameras) {
     if (scrollTrackingObserver) scrollTrackingObserver.disconnect();
     if (_scrollTrackingHandler) {
@@ -1184,12 +1189,12 @@ const App = (() => {
         },
         () => {
           // Denied — fall back to fitting route
-          if (currentWaypoints.length > 0) TripMap.fitToRoute(currentWaypoints);
+          if (currentWaypoints.length > 0) TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } else if (currentWaypoints.length > 0) {
-      TripMap.fitToRoute(currentWaypoints);
+      TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
     }
   }
 
@@ -1237,7 +1242,7 @@ const App = (() => {
     dom.cameraList.style.overflowY = 'hidden';
     dom.cameraList.scrollTop = 0;
     TripMap.invalidateSize();
-    setTimeout(() => TripMap.fitToRoute(currentWaypoints), 200);
+    setTimeout(() => TripMap.fitToRoute(currentWaypoints, { paddingBottom: 180 }), 200);
   }
 
   // ── List scroll interactions (reveal, pull-to-refresh) ───────
@@ -1292,52 +1297,40 @@ const App = (() => {
           ptr.style.height = pull + 'px';
           ptr.style.opacity = progress;
           ptr.querySelector('svg').style.transform = `rotate(${progress * 360}deg)`;
-          if (pull >= PTR_TRIGGER) {
+          if (pull >= PTR_TRIGGER && !triggered) {
             triggered = true;
+            // Start fetch immediately so it can finish before release
+            isRefreshing = true;
+            doRefresh().then(() => {
+              isRefreshing = false;
+              ptr.classList.remove('loading');
+            });
           }
         }
         return;
       }
 
-      // Revealed & at top: swipe down collapses, or pull-to-refresh
-      if (touchStartScrollTop <= 0 && list.scrollTop <= 0) {
-        if (delta > THRESHOLD && !isPulling) {
-          // Swipe down at top without PTR active → collapse
-          triggered = true;
-          collapseSheet();
-          return;
-        }
-        // Pull-to-refresh
-        if (isPulling && !isRefreshing && delta > 0) {
-          const pull = Math.min(delta, PTR_MAX);
-          const progress = pull / PTR_MAX;
-          ptr.style.height = pull + 'px';
-          ptr.style.opacity = progress;
-          ptr.querySelector('svg').style.transform = `rotate(${progress * 360}deg)`;
-          if (pull >= PTR_TRIGGER) {
-            triggered = true;
-          }
-        }
+      // Revealed & at top: swipe down collapses the sheet
+      if (touchStartScrollTop <= 0 && list.scrollTop <= 0 && delta > THRESHOLD) {
+        triggered = true;
+        isPulling = false;
+        resetPull();
+        collapseSheet();
+        return;
       }
     }, { passive: true });
 
     document.addEventListener('touchend', () => {
       if (!isPulling) return;
-      ptr.classList.remove('pulling');
 
-      if (triggered && !isRefreshing) {
-        isRefreshing = true;
-        ptr.style.height = '';
-        ptr.style.opacity = '';
-        ptr.querySelector('svg').style.transform = '';
-        ptr.classList.add('refreshing');
-        doRefresh().then(() => {
-          ptr.classList.remove('refreshing');
-          isRefreshing = false;
-        });
-      } else {
-        resetPull();
+      // Always snap the pull visual back
+      resetPull();
+
+      // If refresh is still in progress, show a non-intrusive floating spinner
+      if (isRefreshing) {
+        ptr.classList.add('loading');
       }
+
       isPulling = false;
     }, { passive: true });
 
@@ -1389,9 +1382,9 @@ const App = (() => {
             wheelAccum = 0;
             wheelCooldown = true;
             isRefreshing = true;
-            ptr.classList.add('refreshing');
+            ptr.classList.add('loading');
             doRefresh().then(() => {
-              ptr.classList.remove('refreshing');
+              ptr.classList.remove('loading');
               isRefreshing = false;
             });
             setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
