@@ -602,7 +602,7 @@ button {
 
 .map-center-btn {
   position: absolute;
-  bottom: 64px;
+  bottom: 224px;
   right: 16px;
   z-index: 500;
   width: 40px;
@@ -615,8 +615,13 @@ button {
   justify-content: center;
   color: var(--text-secondary);
   box-shadow: var(--shadow-sm);
-  transition: transform var(--duration-fast) var(--spring),
+  transition: bottom var(--duration-slow) var(--spring),
+              transform var(--duration-fast) var(--spring),
               background var(--duration-fast);
+}
+
+.sheet-expanded .map-center-btn {
+  bottom: 64px;
 }
 
 .map-center-btn:active {
@@ -625,7 +630,7 @@ button {
 
 .map-toggle {
   position: absolute;
-  bottom: 16px;
+  bottom: 176px;
   right: 16px;
   z-index: 500;
   width: 40px;
@@ -638,8 +643,13 @@ button {
   justify-content: center;
   color: var(--text-secondary);
   box-shadow: var(--shadow-sm);
-  transition: transform var(--duration-fast) var(--spring),
+  transition: bottom var(--duration-slow) var(--spring),
+              transform var(--duration-fast) var(--spring),
               background var(--duration-fast);
+}
+
+.sheet-expanded .map-toggle {
+  bottom: 16px;
 }
 
 .map-toggle:active {
@@ -1364,6 +1374,9 @@ button {
     height: calc(100dvh - var(--header-height));
     width: 50%;
   }
+
+  .map-center-btn { bottom: 64px; }
+  .map-toggle { bottom: 16px; }
 
   .sheet,
   .sheet.revealed {
