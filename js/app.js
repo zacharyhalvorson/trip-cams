@@ -134,6 +134,7 @@ const App = (() => {
     function syncLayout() {
       if (isWideLayout()) {
         document.body.classList.add('sheet-expanded');
+        dom.sheet.classList.remove('peeking');
         dom.sheet.classList.add('revealed');
         dom.cameraList.style.overflowY = '';
       } else if (!sheetRevealed) {
@@ -614,9 +615,9 @@ const App = (() => {
     renderCameraList(filteredClusters);
     TripMap.setMarkers(cameras, onMarkerClick);
 
-    // Auto-reveal the bottom sheet on narrow viewports once cameras are available
+    // Auto-peek the bottom sheet on narrow viewports once cameras are available
     if (!sheetRevealed && !isWideLayout() && cameras.length > 0) {
-      revealSheet();
+      peekSheet();
     }
   }
 
@@ -1207,10 +1208,18 @@ const App = (() => {
 
   // ── Sheet reveal / collapse ─────────────────────────────────
 
+  function peekSheet() {
+    if (isWideLayout()) return;
+    dom.sheet.classList.add('peeking');
+    dom.sheet.classList.remove('revealed');
+    dom.cameraList.style.overflowY = 'hidden';
+  }
+
   function revealSheet() {
     if (sheetRevealed || isWideLayout()) return;
     sheetRevealed = true;
     dom.mapContainer.style.height = '20vh';
+    dom.sheet.classList.remove('peeking');
     dom.sheet.classList.add('revealed');
     document.body.classList.add('sheet-expanded');
     dom.cameraList.style.overflowY = '';
@@ -1236,6 +1245,7 @@ const App = (() => {
     sheetRevealed = false;
     dom.mapContainer.style.height = '';
     dom.sheet.classList.remove('revealed');
+    dom.sheet.classList.add('peeking');
     document.body.classList.remove('sheet-expanded');
     dom.cameraList.style.overflowY = 'hidden';
     dom.cameraList.scrollTop = 0;
@@ -1267,7 +1277,7 @@ const App = (() => {
       touchStartY = e.touches[0].clientY;
       touchStartScrollTop = list.scrollTop;
       triggered = false;
-      if (!isRefreshing && sheetRevealed && touchStartScrollTop <= 0) {
+      if (!isRefreshing && touchStartScrollTop <= 0) {
         isPulling = true;
         ptr.classList.add('pulling');
       }
@@ -1283,7 +1293,21 @@ const App = (() => {
         // Collapsed: swipe up (finger moves up) reveals the sheet
         if (delta < -THRESHOLD) {
           triggered = true;
+          isPulling = false;
+          resetPull();
           revealSheet();
+          return;
+        }
+        // Collapsed: swipe down (finger moves down) triggers pull-to-refresh
+        if (isPulling && !isRefreshing && delta > 0) {
+          const pull = Math.min(delta, PTR_MAX);
+          const progress = pull / PTR_MAX;
+          ptr.style.height = pull + 'px';
+          ptr.style.opacity = progress;
+          ptr.querySelector('svg').style.transform = `rotate(${progress * 360}deg)`;
+          if (pull >= PTR_TRIGGER) {
+            triggered = true;
+          }
         }
         return;
       }
@@ -1355,7 +1379,7 @@ const App = (() => {
     document.addEventListener('wheel', (e) => {
       if (isWideLayout()) return;
 
-      // Sheet not yet revealed — scroll-up (deltaY < 0) anywhere reveals it
+      // Sheet not yet revealed — scroll-up reveals, scroll-down triggers PTR
       if (!sheetRevealed) {
         if (e.deltaY < 0) {
           if (wheelCooldown) { e.preventDefault(); return; }
@@ -1366,6 +1390,23 @@ const App = (() => {
             wheelAccum = 0;
             wheelCooldown = true;
             revealSheet();
+            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
+          }
+        } else if (e.deltaY > 0 && !isRefreshing) {
+          // Scroll down while collapsed → pull-to-refresh
+          if (wheelCooldown) { e.preventDefault(); return; }
+          wheelAccum += e.deltaY;
+          e.preventDefault();
+          e.stopPropagation();
+          if (wheelAccum >= WHEEL_THRESHOLD) {
+            wheelAccum = 0;
+            wheelCooldown = true;
+            isRefreshing = true;
+            ptr.classList.add('refreshing');
+            doRefresh().then(() => {
+              ptr.classList.remove('refreshing');
+              isRefreshing = false;
+            });
             setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
           }
         } else {
