@@ -1526,8 +1526,11 @@ const App = (() => {
 
     if (canFlip) {
       const firstRect = thumbImg.getBoundingClientRect();
+
+      // Keep modal invisible during the FLIP; suppress its own CSS transition
+      dom.modal.style.transition = 'none';
       dom.modal.style.opacity = '0';
-      dom.modal.style.transform = 'translateY(20px)';
+      dom.modal.style.transform = 'translateY(0)';
       dom.modalOverlay.classList.add('active');
       document.body.style.overflow = 'hidden';
 
@@ -1542,6 +1545,9 @@ const App = (() => {
       document.body.appendChild(clone);
       _flipClone = clone;
 
+      // Force layout so the modal is at its final position for measurement
+      void dom.modal.offsetHeight;
+
       requestAnimationFrame(() => {
         const modalImgContainer = dom.modal.querySelector('.modal-image-container');
         const lastRect = modalImgContainer.getBoundingClientRect();
@@ -1552,6 +1558,8 @@ const App = (() => {
         clone.style.height = lastRect.height + 'px';
 
         const cleanup = () => {
+          // Reveal the modal and remove the clone
+          dom.modal.style.transition = '';
           dom.modal.style.opacity = '';
           dom.modal.style.transform = '';
           if (_flipClone) { _flipClone.remove(); _flipClone = null; }
@@ -1778,6 +1786,7 @@ const App = (() => {
   }
 
   function _resetModalState() {
+    dom.modal.style.transition = '';
     dom.modal.style.opacity = '';
     dom.modal.style.transform = '';
     document.body.style.overflow = '';

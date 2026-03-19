@@ -1215,6 +1215,7 @@ button {
 .modal-image-container {
   position: relative;
   width: 100%;
+  aspect-ratio: 16 / 9;
   background: var(--navy);
   overflow: hidden;
   flex-shrink: 0;
