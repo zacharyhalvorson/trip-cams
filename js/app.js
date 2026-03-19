@@ -14,7 +14,7 @@ const App = (() => {
   let dropdownTarget = null; // 'from' or 'to'
   let autoRefreshInterval = null;
   let currentModalCamera = null;
-  let sheetExpanded = false; // true when sheet is pulled up (20vh map)
+  let sheetRevealed = false; // true once the sheet has been revealed (one-way)
   let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
   let _focusedCameraId = null; // the camera card currently centered in the list
   let userLocation = null; // { lat, lon, nearestStop } when geolocation available
@@ -132,16 +132,17 @@ const App = (() => {
     document.documentElement.style.setProperty('--header-height', hh + 'px');
 
     // On wide layouts, the expanded view is always active
-    function syncExpandedClass() {
+    function syncLayout() {
       if (isWideLayout()) {
         document.body.classList.add('sheet-expanded');
+        dom.sheet.classList.add('revealed');
         dom.cameraList.style.overflowY = '';
-      } else if (!sheetExpanded) {
+      } else if (!sheetRevealed) {
         dom.cameraList.style.overflowY = 'hidden';
       }
     }
-    syncExpandedClass();
-    window.addEventListener('resize', syncExpandedClass);
+    syncLayout();
+    window.addEventListener('resize', syncLayout);
 
     // Sync camera list when user pans/zooms the map
     TripMap.onViewportChange((visibleIds) => {
@@ -286,8 +287,7 @@ const App = (() => {
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
 
-    // Bottom sheet drag
-    initSheetDrag();
+    // List scroll interactions (reveal + pull-to-refresh)
     initListScrollExpand();
   }
 
@@ -696,6 +696,7 @@ const App = (() => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const img = entry.target;
+            if (!img.dataset.src) { observer.unobserve(img); continue; }
             img.src = cacheBustUrl(img.dataset.src);
             img.removeAttribute('data-src');
             img.onerror = () => { img.src = 'img/placeholder.svg'; };
@@ -765,7 +766,6 @@ const App = (() => {
     if (!('IntersectionObserver' in window)) return;
 
     const visibleIds = new Set();
-    let fitDebounce = null;
 
     scrollTrackingObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
@@ -777,12 +777,6 @@ const App = (() => {
         }
       }
       TripMap.highlightVisible(visibleIds);
-      // On mobile with sheet expanded, zoom map to fit visible cameras
-      // On desktop, updateFocusedCamera handles panning instead
-      if (sheetExpanded && !isWideLayout() && !_mapInitiatedScroll) {
-        clearTimeout(fitDebounce);
-        fitDebounce = setTimeout(() => TripMap.fitToVisible(visibleIds), 300);
-      }
     }, {
       root: dom.cameraList,
       rootMargin: '0px',
@@ -807,7 +801,7 @@ const App = (() => {
   function updateFocusedCamera() {
     if (_mapInitiatedScroll) return;
     // Only auto-pan on wide layout, or narrow with sheet expanded
-    if (!isWideLayout() && !sheetExpanded) return;
+    if (!isWideLayout() && !sheetRevealed) return;
 
     const listRect = dom.cameraList.getBoundingClientRect();
     const centerY = listRect.top + listRect.height / 2;
@@ -868,23 +862,20 @@ const App = (() => {
     }
   }
 
-  // ── Sheet expand / collapse helpers ─────────────────────────
+  // ── Sheet reveal / collapse ─────────────────────────────────
 
-  function expandSheet() {
-    const headerHeight = document.querySelector('.header').offsetHeight;
-    const mapContainer = dom.mapContainer;
-    const sheet = dom.sheet;
-
-    mapContainer.style.height = '20vh';
-    sheet.style.top = `calc(${headerHeight}px + 20vh)`;
-    sheetExpanded = true;
+  function revealSheet() {
+    if (sheetRevealed || isWideLayout()) return;
+    sheetRevealed = true;
+    dom.mapContainer.style.height = '20vh';
+    dom.sheet.classList.add('revealed');
     document.body.classList.add('sheet-expanded');
     dom.cameraList.style.overflowY = '';
     TripMap.invalidateSize();
+    // Zoom map to fit the cameras visible in the list
     setTimeout(() => {
-      const visibleCards = dom.cameraList.querySelectorAll('.camera-card');
       const visibleIds = new Set();
-      for (const card of visibleCards) {
+      for (const card of dom.cameraList.querySelectorAll('.camera-card')) {
         const rect = card.getBoundingClientRect();
         const listRect = dom.cameraList.getBoundingClientRect();
         if (rect.top < listRect.bottom && rect.bottom > listRect.top) {
@@ -898,135 +889,72 @@ const App = (() => {
   }
 
   function collapseSheet() {
-    const headerHeight = document.querySelector('.header').offsetHeight;
-    const mapContainer = dom.mapContainer;
-    const sheet = dom.sheet;
-
-    mapContainer.style.height = '50vh';
-    sheet.style.top = `calc(${headerHeight}px + 50vh)`;
-    sheetExpanded = false;
+    if (!sheetRevealed || isWideLayout()) return;
+    sheetRevealed = false;
+    dom.mapContainer.style.height = '';
+    dom.sheet.classList.remove('revealed');
     document.body.classList.remove('sheet-expanded');
-    if (!isWideLayout()) dom.cameraList.style.overflowY = 'hidden';
+    dom.cameraList.style.overflowY = 'hidden';
+    dom.cameraList.scrollTop = 0;
     TripMap.invalidateSize();
     setTimeout(() => TripMap.fitToRoute(currentWaypoints), 200);
   }
 
-  // ── Bottom Sheet Drag ────────────────────────────────────────
-
-  function initSheetDrag() {
-    const handle = dom.sheetHandle;
-    const sheet = dom.sheet;
-    const mapContainer = dom.mapContainer;
-    let startY = 0;
-    let startTop = 0;
-    let isDragging = false;
-
-    function getSheetTop() {
-      return sheet.getBoundingClientRect().top;
-    }
-
-    function onStart(e) {
-      isDragging = true;
-      startY = e.touches ? e.touches[0].clientY : e.clientY;
-      startTop = getSheetTop();
-      sheet.style.transition = 'none';
-      mapContainer.style.transition = 'none';
-    }
-
-    function onMove(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      const y = e.touches ? e.touches[0].clientY : e.clientY;
-      const delta = y - startY;
-      const headerHeight = document.querySelector('.header').offsetHeight;
-      const minTop = headerHeight;
-      const maxTop = window.innerHeight - 120;
-      const newTop = Math.max(minTop, Math.min(maxTop, startTop + delta));
-
-      sheet.style.top = newTop + 'px';
-      mapContainer.style.height = (newTop - headerHeight) + 'px';
-    }
-
-    function onEnd() {
-      if (!isDragging) return;
-      isDragging = false;
-      sheet.style.transition = '';
-      mapContainer.style.transition = '';
-
-      const headerHeight = document.querySelector('.header').offsetHeight;
-      const currentTop = getSheetTop();
-      const windowHeight = window.innerHeight;
-      const midpoint = headerHeight + (windowHeight - headerHeight) * 0.4;
-
-      if (currentTop < midpoint) {
-        expandSheet();
-      } else {
-        collapseSheet();
-      }
-    }
-
-    handle.addEventListener('touchstart', onStart, { passive: true });
-    handle.addEventListener('mousedown', onStart);
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('touchend', onEnd);
-    document.addEventListener('mouseup', onEnd);
-  }
-
-  // ── Scroll-to-expand / scroll-to-collapse on narrow viewports ─
+  // ── List scroll interactions (reveal, pull-to-refresh) ───────
 
   function initListScrollExpand() {
     const list = dom.cameraList;
     const ptr = dom.pullToRefresh;
     let touchStartY = 0;
     let touchStartScrollTop = 0;
-    const THRESHOLD = 30; // px of overscroll before triggering
-    const PTR_MAX = 60;   // max pull distance for pull-to-refresh
-    const PTR_TRIGGER = 48; // pull distance to trigger refresh
+    const THRESHOLD = 30;
+    const PTR_MAX = 60;
+    const PTR_TRIGGER = 48;
     let triggered = false;
     let isPulling = false;
     let isRefreshing = false;
 
-    list.addEventListener('touchstart', (e) => {
+    // ── Touch events ──
+    // Document-level listeners for reveal/collapse so they work even when
+    // the sheet is offscreen (Safari responsive mode converts trackpad to touch).
+    // List-level listeners handle pull-to-refresh once revealed.
+
+    document.addEventListener('touchstart', (e) => {
       if (isWideLayout()) return;
       touchStartY = e.touches[0].clientY;
       touchStartScrollTop = list.scrollTop;
       triggered = false;
-      if (!isRefreshing && touchStartScrollTop <= 0) {
+      if (!isRefreshing && sheetRevealed && touchStartScrollTop <= 0) {
         isPulling = true;
         ptr.classList.add('pulling');
       }
     }, { passive: true });
 
-    list.addEventListener('touchmove', (e) => {
+    document.addEventListener('touchmove', (e) => {
       if (isWideLayout() || triggered) return;
 
       const y = e.touches[0].clientY;
       const delta = y - touchStartY; // positive = finger moving down
 
-      if (!sheetExpanded) {
-        // Collapsed & at top: pulling down triggers pull-to-refresh
-        if (isPulling && !isRefreshing && touchStartScrollTop <= 0 && list.scrollTop <= 0 && delta > 0) {
-          const pull = Math.min(delta, PTR_MAX);
-          const progress = pull / PTR_MAX;
-          ptr.style.height = pull + 'px';
-          ptr.style.opacity = progress;
-          // Rotate the arc based on pull progress
-          ptr.querySelector('svg').style.transform = `rotate(${progress * 360}deg)`;
-          if (pull >= PTR_TRIGGER) {
-            triggered = true;
-          }
-          return;
-        }
-        // Collapsed: any upward scroll (finger moves up) expands the sheet
+      if (!sheetRevealed) {
+        // Collapsed: swipe up (finger moves up) reveals the sheet
         if (delta < -THRESHOLD) {
           triggered = true;
-          resetPull();
-          expandSheet();
+          revealSheet();
         }
-      } else {
-        // Expanded & at the very top: pulling down triggers pull-to-refresh
-        if (isPulling && !isRefreshing && touchStartScrollTop <= 0 && list.scrollTop <= 0 && delta > 0) {
+        return;
+      }
+
+      // Revealed & at top: swipe down collapses, or pull-to-refresh
+      if (touchStartScrollTop <= 0 && list.scrollTop <= 0) {
+        if (delta > THRESHOLD && !isPulling) {
+          // Swipe down at top without PTR active → collapse
+          triggered = true;
+          collapseSheet();
+          return;
+        }
+        // Pull-to-refresh
+        if (isPulling && !isRefreshing && delta > 0) {
           const pull = Math.min(delta, PTR_MAX);
           const progress = pull / PTR_MAX;
           ptr.style.height = pull + 'px';
@@ -1035,22 +963,15 @@ const App = (() => {
           if (pull >= PTR_TRIGGER) {
             triggered = true;
           }
-          return;
-        }
-        // Expanded & at top: pulling down past threshold without PTR collapses
-        if (touchStartScrollTop <= 0 && list.scrollTop <= 0 && delta > THRESHOLD && !isPulling) {
-          triggered = true;
-          collapseSheet();
         }
       }
     }, { passive: true });
 
-    list.addEventListener('touchend', () => {
+    document.addEventListener('touchend', () => {
       if (!isPulling) return;
       ptr.classList.remove('pulling');
 
       if (triggered && !isRefreshing) {
-        // Trigger refresh
         isRefreshing = true;
         ptr.style.height = '';
         ptr.style.opacity = '';
@@ -1079,20 +1000,76 @@ const App = (() => {
       await loadCameras();
     }
 
-    // Wheel events (trackpad / mouse scroll) — expand sheet on scroll-up when collapsed
-    list.addEventListener('wheel', (e) => {
+    // ── Wheel events (trackpad / mouse) ──
+    // Use capture phase so we see the event before Leaflet's map zoom
+    // handler calls stopPropagation(). This lets us intercept scroll-up
+    // to reveal the sheet even when the cursor is over the map.
+    let wheelAccum = 0;
+    let wheelCooldown = false;
+    const WHEEL_THRESHOLD = 60;
+    const WHEEL_COOLDOWN_MS = 400;
+
+    document.addEventListener('wheel', (e) => {
       if (isWideLayout()) return;
 
-      if (!sheetExpanded && e.deltaY < 0) {
-        // Scrolling up while collapsed — expand the sheet
-        e.preventDefault();
-        expandSheet();
-      } else if (sheetExpanded && list.scrollTop <= 0 && e.deltaY > 0) {
-        // Scrolling down at top while expanded — collapse the sheet
-        e.preventDefault();
-        collapseSheet();
+      // Sheet not yet revealed — scroll-up (deltaY < 0) anywhere reveals it
+      if (!sheetRevealed) {
+        if (e.deltaY < 0) {
+          if (wheelCooldown) { e.preventDefault(); return; }
+          wheelAccum += Math.abs(e.deltaY);
+          e.preventDefault();
+          e.stopPropagation(); // prevent Leaflet map zoom
+          if (wheelAccum >= WHEEL_THRESHOLD) {
+            wheelAccum = 0;
+            wheelCooldown = true;
+            revealSheet();
+            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
+          }
+        } else {
+          wheelAccum = 0;
+        }
+        return;
       }
-    }, { passive: false });
+
+      // Sheet is revealed — handle scroll at the top of the list
+      if (list.scrollTop <= 0) {
+        if (e.deltaY > 0) {
+          // Scrolling down at top → collapse sheet
+          if (wheelCooldown) { e.preventDefault(); return; }
+          wheelAccum += e.deltaY;
+          e.preventDefault();
+          e.stopPropagation();
+          if (wheelAccum >= WHEEL_THRESHOLD) {
+            wheelAccum = 0;
+            wheelCooldown = true;
+            collapseSheet();
+            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
+          }
+        } else if (e.deltaY < 0 && !isRefreshing) {
+          // Scrolling up at top → pull-to-refresh
+          if (wheelCooldown) { e.preventDefault(); return; }
+          wheelAccum += Math.abs(e.deltaY);
+          e.preventDefault();
+          e.stopPropagation();
+          if (wheelAccum >= WHEEL_THRESHOLD) {
+            wheelAccum = 0;
+            wheelCooldown = true;
+            isRefreshing = true;
+            ptr.classList.add('refreshing');
+            doRefresh().then(() => {
+              ptr.classList.remove('refreshing');
+              isRefreshing = false;
+            });
+            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
+          }
+        } else {
+          wheelAccum = 0;
+        }
+      } else {
+        // Scrolling mid-list — let native scroll handle it, reset accumulator
+        wheelAccum = 0;
+      }
+    }, { capture: true, passive: false });
   }
 
   // ── Modal ────────────────────────────────────────────────────

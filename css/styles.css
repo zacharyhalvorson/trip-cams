@@ -366,7 +366,7 @@ button {
   top: var(--header-height);
   left: 0;
   right: 0;
-  height: 40vh;
+  height: calc(100dvh - var(--header-height));
   z-index: 1;
   transition: height var(--duration-slow) var(--spring);
 }
@@ -609,7 +609,7 @@ button {
   bottom: 0;
   left: 0;
   right: 0;
-  top: calc(var(--header-height) + 40vh);
+  top: 100dvh;
   z-index: 100;
   background: var(--navy);
   border-radius: 20px 20px 0 0;
@@ -617,6 +617,10 @@ button {
   flex-direction: column;
   transition: top var(--duration-slow) var(--spring);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.sheet.revealed {
+  top: calc(var(--header-height) + 20vh);
 }
 
 .map-container.collapsed ~ .sheet {
@@ -635,6 +639,14 @@ button {
   padding: 10px 0;
   cursor: grab;
   border-radius: 20px 20px 0 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration) var(--ease-out);
+}
+
+.sheet.revealed .sheet-handle {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .sheet-handle-bar {
@@ -1249,7 +1261,8 @@ button {
     width: 50%;
   }
 
-  .sheet {
+  .sheet,
+  .sheet.revealed {
     position: fixed;
     top: var(--header-height);
     left: 50%;
