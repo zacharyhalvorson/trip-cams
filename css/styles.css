@@ -1049,54 +1049,95 @@ button {
 }
 
 .modal {
+  position: relative;
   width: 100%;
-  max-width: 640px;
-  background: var(--surface-raised);
-  border-radius: 24px 24px 0 0;
+  max-width: 800px;
+  background: var(--navy);
+  border-radius: 16px;
   overflow: hidden;
-  transform: translateY(100%);
-  transition: transform var(--duration-slow) var(--spring);
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity var(--duration) var(--ease-out),
+              transform var(--duration) var(--spring);
+  max-height: 95vh;
 }
 
 .modal-overlay.active .modal {
+  opacity: 1;
   transform: translateY(0);
 }
 
+/* FLIP transition clone — floats from card position to modal position */
+.modal-transition-clone {
+  position: fixed;
+  z-index: 2001;
+  border-radius: 16px;
+  overflow: hidden;
+  object-fit: cover;
+  will-change: transform, width, height, top, left, border-radius;
+  transition: all var(--duration-slow) var(--spring);
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+
+.modal-transition-clone.to-modal {
+  border-radius: 16px 16px 0 0;
+}
+
+.modal-transition-clone.to-card {
+  /* border-radius animates back to card shape */
+}
+
 .modal-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 20px 20px 12px;
-  flex-shrink: 0;
+  gap: 12px;
+  padding: 12px 12px 28px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 60%, transparent 100%);
+  pointer-events: none;
 }
 
-.modal-title h2 {
-  font-size: 18px;
-  font-weight: 700;
+.modal-header > * {
+  pointer-events: auto;
+}
+
+.modal-header h2 {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.3;
-  margin-bottom: 4px;
-}
-
-.modal-title p {
-  font-size: 13px;
-  color: var(--text-secondary);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
 .modal-close {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--navy);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #fff;
   flex-shrink: 0;
   transition: transform var(--duration-fast) var(--spring),
               background var(--duration-fast);
+}
+
+.modal-close:hover {
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .modal-close:active {
@@ -1106,16 +1147,55 @@ button {
 .modal-image-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 4/3;
   background: var(--navy);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
-.modal-image-container img {
+.modal-image-container > img {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  display: block;
   background: var(--navy);
+}
+
+/* Modal carousel (reuses cluster-card patterns) */
+.modal-image-container .cluster-track {
+  display: flex;
+  width: 100%;
+  transition: transform 0.3s var(--spring);
+  will-change: transform;
+}
+
+.modal-image-container .cluster-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+.modal-image-container .cluster-slide img {
+  width: 100%;
+  display: block;
+  background: var(--navy);
+}
+
+.modal-image-container .cluster-dots {
+  bottom: 12px;
+}
+
+.modal-image-container .cluster-arrow {
+  opacity: 0;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.modal-image-container:hover .cluster-arrow {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .modal-image-container .cluster-arrow {
+    opacity: 0.8;
+  }
 }
 
 .modal-loading {
@@ -1143,71 +1223,6 @@ button {
   animation: spin 0.7s linear infinite;
 }
 
-.modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
-  padding-bottom: calc(14px + var(--safe-bottom));
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-/* Toggle switch */
-.auto-refresh-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.auto-refresh-toggle input {
-  display: none;
-}
-
-.toggle-slider {
-  width: 44px;
-  height: 26px;
-  background: var(--border);
-  border-radius: 13px;
-  position: relative;
-  transition: background var(--duration-fast);
-  flex-shrink: 0;
-}
-
-.toggle-slider::after {
-  content: '';
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  background: white;
-  border-radius: 50%;
-  top: 3px;
-  left: 3px;
-  transition: transform var(--duration-fast) var(--spring-bounce);
-  box-shadow: var(--shadow-sm);
-}
-
-.auto-refresh-toggle input:checked + .toggle-slider {
-  background: var(--green);
-}
-
-.auto-refresh-toggle input:checked + .toggle-slider::after {
-  transform: translateX(18px);
-}
-
-.toggle-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.last-refreshed {
-  font-size: 12px;
-  color: var(--text-muted);
-}
 
 /* =============================================================
    Offline Banner
@@ -1327,18 +1342,18 @@ button {
   }
 
   .modal {
-    max-width: 600px;
-    border-radius: 24px;
+    max-width: 800px;
+    border-radius: 16px;
     margin: auto;
-    max-height: 85vh;
+    max-height: 90vh;
   }
 
   .modal-overlay {
     align-items: center;
   }
 
-  .modal-footer {
-    padding-bottom: 14px;
+  .modal-transition-clone.to-modal {
+    border-radius: 16px;
   }
 }
 
@@ -1524,45 +1539,6 @@ button {
   -webkit-backdrop-filter: blur(4px);
 }
 
-/* Modal cluster navigation */
-.modal-cluster-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 6px 0 2px;
-}
-
-.modal-cluster-nav button {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity var(--duration-fast) ease;
-}
-
-.modal-cluster-nav button:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-
-.modal-cluster-nav button:not(:disabled):hover {
-  background: var(--green-subtle);
-}
-
-.modal-cluster-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  min-width: 40px;
-  text-align: center;
-}
 
 /* Touch devices: always show arrows on clusters */
 @media (hover: none) {

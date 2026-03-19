@@ -14,7 +14,6 @@ const App = (() => {
   let fromStop = null;
   let toStop = null;
   let dropdownTarget = null; // 'from' or 'to'
-  let autoRefreshInterval = null;
   let currentModalCamera = null;
   let sheetRevealed = false; // true once the sheet has been revealed (one-way)
   let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
@@ -116,12 +115,7 @@ const App = (() => {
     dom.modalOverlay = $('#modalOverlay');
     dom.modal = $('#modal');
     dom.modalName = $('#modalName');
-    dom.modalInfo = $('#modalInfo');
-    dom.modalImage = $('#modalImage');
-    dom.modalLoading = $('#modalLoading');
     dom.modalClose = $('#modalClose');
-    dom.autoRefreshToggle = $('#autoRefreshToggle');
-    dom.lastRefreshed = $('#lastRefreshed');
     dom.offlineBanner = $('#offlineBanner');
     dom.pullToRefresh = $('#pullToRefresh');
   }
@@ -291,8 +285,6 @@ const App = (() => {
     dom.modalOverlay.addEventListener('click', (e) => {
       if (e.target === dom.modalOverlay) closeModal();
     });
-    dom.autoRefreshToggle.addEventListener('change', toggleAutoRefresh);
-
     // Keyboard
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -304,6 +296,17 @@ const App = (() => {
     // Online/offline
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
+
+    // Browser back/forward for camera hash
+    window.addEventListener('popstate', () => {
+      const camId = _getCameraIdFromHash();
+      if (camId && !dom.modalOverlay.classList.contains('active')) {
+        _openCameraFromHash();
+      } else if (!camId && dom.modalOverlay.classList.contains('active')) {
+        // Back button pressed while modal is open — close visually (hash already gone)
+        _closeModalVisual();
+      }
+    });
 
     // List scroll interactions (reveal + pull-to-refresh)
     initListScrollExpand();
@@ -497,7 +500,11 @@ const App = (() => {
 
   function updateHash() {
     if (fromStop && toStop) {
-      window.location.hash = `from=${fromStop.id}&to=${toStop.id}`;
+      let hash = `from=${fromStop.id}&to=${toStop.id}`;
+      // Preserve camera param if modal is open
+      const camId = _getCameraIdFromHash();
+      if (camId) hash += `&camera=${camId}`;
+      window.location.hash = hash;
     }
   }
 
@@ -550,6 +557,9 @@ const App = (() => {
       dom.offlineBanner.classList.add('visible');
     }
     dom.skeletonList.classList.add('hidden');
+
+    // Auto-open camera from URL hash (e.g. #camera=ab-123)
+    requestAnimationFrame(() => _openCameraFromHash());
   }
 
   let _lastFilteredIds = ''; // Track last rendered set to skip no-op re-renders
@@ -651,7 +661,7 @@ const App = (() => {
           </div>
         </div>
       `;
-      card.addEventListener('click', () => openModal(cam));
+      card.addEventListener('click', () => openModal(cam, null, card));
       card.addEventListener('mouseenter', () => {
         _hoveredCameraId = cam.id;
         TripMap.focusMarker(cam.id);
@@ -728,7 +738,6 @@ const App = (() => {
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </button>
         <div class="cluster-dots">${dotsHtml}</div>
-        <span class="cluster-count">${cams.length}</span>
       </div>
     `;
 
@@ -836,7 +845,7 @@ const App = (() => {
 
     // ── Click opens modal for current page camera ──
     card.addEventListener('click', () => {
-      openModal(cams[currentPage], cluster);
+      openModal(cams[currentPage], cluster, card);
     });
 
     // ── Hover / focus map sync ──
@@ -1155,7 +1164,7 @@ const App = (() => {
     // Find cluster for modal navigation
     const clusterIdx = _clusterByCamId.get(cam.id);
     const cluster = clusterIdx !== undefined ? filteredClusters[clusterIdx] : null;
-    openModal(cam, cluster);
+    openModal(cam, cluster, card);
   }
 
   function toggleMap() {
@@ -1383,125 +1392,384 @@ const App = (() => {
 
   let _modalCluster = null; // cluster object when viewing a clustered camera
   let _modalClusterPage = 0;
+  let _modalSourceCardEl = null; // reference to the card element that opened the modal
+  let _flipClone = null; // the floating image clone used during FLIP animation
+  let _modalOpenedViaHistory = false; // true when opened from popstate / URL parse
 
-  function openModal(cam, cluster) {
+  // Prefer reduced motion?
+  function _prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  // Find the source card element for a given camera id
+  function _findSourceCard(camId) {
+    let card = dom.cameraList.querySelector(`[data-id="${camId}"]`);
+    if (!card) {
+      const cards = dom.cameraList.querySelectorAll('.cluster-card');
+      for (const c of cards) {
+        const ids = (c.dataset.clusterIds || '').split(',');
+        if (ids.includes(camId)) { card = c; break; }
+      }
+    }
+    return card;
+  }
+
+  // Get the thumbnail image element from a card
+  function _getCardThumbImg(card) {
+    if (!card) return null;
+    // For cluster cards, find the currently visible slide's image
+    const activeSlide = card.querySelector('.cluster-slide');
+    if (activeSlide) return activeSlide.querySelector('img');
+    // For single camera cards
+    return card.querySelector('.camera-thumb img');
+  }
+
+  // Check if an element is visible within the camera list viewport
+  function _isCardVisible(card) {
+    if (!card) return false;
+    const listRect = dom.cameraList.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    return cardRect.bottom > listRect.top && cardRect.top < listRect.bottom;
+  }
+
+  function openModal(cam, cluster, sourceCard) {
     currentModalCamera = cam;
     _modalCluster = cluster && cluster.cameras.length > 1 ? cluster : null;
     _modalClusterPage = _modalCluster ? _modalCluster.cameras.indexOf(cam) : 0;
     if (_modalClusterPage < 0) _modalClusterPage = 0;
 
-    _renderModalContent(cam);
+    // Find the source card if not provided
+    if (!sourceCard) sourceCard = _findSourceCard(cam.id);
+    _modalSourceCardEl = sourceCard;
 
-    // Show/hide modal cluster navigation
-    const modalNav = dom.modal.querySelector('.modal-cluster-nav');
-    if (modalNav) modalNav.remove();
-    if (_modalCluster) {
-      const nav = document.createElement('div');
-      nav.className = 'modal-cluster-nav';
-      nav.innerHTML = `
-        <button class="modal-cluster-prev" aria-label="Previous camera" ${_modalClusterPage === 0 ? 'disabled' : ''}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <span class="modal-cluster-label">${_modalClusterPage + 1} of ${_modalCluster.cameras.length}</span>
-        <button class="modal-cluster-next" aria-label="Next camera" ${_modalClusterPage === _modalCluster.cameras.length - 1 ? 'disabled' : ''}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
-      `;
-      dom.modalName.parentNode.insertBefore(nav, dom.modalName.nextSibling);
-      nav.querySelector('.modal-cluster-prev').addEventListener('click', () => _modalClusterGo(-1));
-      nav.querySelector('.modal-cluster-next').addEventListener('click', () => _modalClusterGo(1));
+    // Build modal image content (single image or carousel)
+    _buildModalImageContent();
+    dom.modalName.textContent = cam.name;
+
+    // ── FLIP animation ──
+    const thumbImg = _getCardThumbImg(sourceCard);
+    const canFlip = thumbImg && _isCardVisible(sourceCard) && !_prefersReducedMotion();
+
+    if (canFlip) {
+      const firstRect = thumbImg.getBoundingClientRect();
+      dom.modal.style.opacity = '0';
+      dom.modal.style.transform = 'translateY(20px)';
+      dom.modalOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      const clone = document.createElement('img');
+      clone.className = 'modal-transition-clone';
+      clone.src = thumbImg.src || thumbImg.dataset.src || 'img/placeholder.svg';
+      clone.style.top = firstRect.top + 'px';
+      clone.style.left = firstRect.left + 'px';
+      clone.style.width = firstRect.width + 'px';
+      clone.style.height = firstRect.height + 'px';
+      clone.style.borderRadius = '16px';
+      document.body.appendChild(clone);
+      _flipClone = clone;
+
+      requestAnimationFrame(() => {
+        const modalImgContainer = dom.modal.querySelector('.modal-image-container');
+        const lastRect = modalImgContainer.getBoundingClientRect();
+        clone.classList.add('to-modal');
+        clone.style.top = lastRect.top + 'px';
+        clone.style.left = lastRect.left + 'px';
+        clone.style.width = lastRect.width + 'px';
+        clone.style.height = lastRect.height + 'px';
+
+        const cleanup = () => {
+          dom.modal.style.opacity = '';
+          dom.modal.style.transform = '';
+          if (_flipClone) { _flipClone.remove(); _flipClone = null; }
+        };
+        clone.addEventListener('transitionend', function onEnd(e) {
+          if (e.propertyName !== 'top' && e.propertyName !== 'width') return;
+          clone.removeEventListener('transitionend', onEnd);
+          cleanup();
+        }, { once: false });
+        setTimeout(cleanup, 600);
+      });
+    } else {
+      dom.modalOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
     }
 
-    dom.modalOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-
-    // Highlight on map
     TripMap.highlightMarker(cam.id);
     TripMap.panTo(cam.lat, cam.lon);
+    _pushCameraHash(cam.id);
   }
 
-  function _renderModalContent(cam) {
-    dom.modalName.textContent = cam.name;
-    dom.modalInfo.textContent = `${cam.highway}${cam.direction ? ' · ' + cam.direction : ''} · ${cam.region}`;
-    dom.modalLoading.classList.add('active');
-    dom.modalImage.src = '';
-    dom.modalImage.onload = () => {
-      dom.modalLoading.classList.remove('active');
-      updateLastRefreshed();
-    };
-    dom.modalImage.onerror = () => {
-      dom.modalLoading.classList.remove('active');
-      dom.modalImage.src = 'img/placeholder.svg';
-    };
-    dom.modalImage.src = cam.imageUrl || 'img/placeholder.svg';
-  }
+  // Build the modal image area — single image or carousel with dots/arrows
+  function _buildModalImageContent() {
+    const container = dom.modal.querySelector('.modal-image-container');
+    // Clear previous content
+    container.innerHTML = '';
 
-  function _modalClusterGo(delta) {
-    if (!_modalCluster) return;
-    const newPage = _modalClusterPage + delta;
-    if (newPage < 0 || newPage >= _modalCluster.cameras.length) return;
-    _modalClusterPage = newPage;
-    const cam = _modalCluster.cameras[newPage];
-    currentModalCamera = cam;
-    _renderModalContent(cam);
+    if (_modalCluster) {
+      const cams = _modalCluster.cameras;
 
-    // Update nav state
-    const nav = dom.modal.querySelector('.modal-cluster-nav');
-    if (nav) {
-      nav.querySelector('.modal-cluster-label').textContent = `${newPage + 1} of ${_modalCluster.cameras.length}`;
-      nav.querySelector('.modal-cluster-prev').disabled = newPage === 0;
-      nav.querySelector('.modal-cluster-next').disabled = newPage === _modalCluster.cameras.length - 1;
+      // Build slides
+      const slidesHtml = cams.map((c) =>
+        `<div class="cluster-slide"><img src="${cacheBustUrl(c.imageUrl || 'img/placeholder.svg')}" alt="${c.name}"></div>`
+      ).join('');
+
+      // Dots
+      const dotsHtml = cams.map((_, i) =>
+        `<button class="cluster-dot${i === _modalClusterPage ? ' active' : ''}" data-idx="${i}" aria-label="Camera ${i + 1} of ${cams.length}"></button>`
+      ).join('');
+
+      container.innerHTML = `
+        <div class="cluster-track" style="transform:translateX(-${_modalClusterPage * 100}%)">${slidesHtml}</div>
+        <button class="cluster-arrow cluster-arrow-prev" aria-label="Previous camera" ${_modalClusterPage === 0 ? 'style="display:none"' : ''}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="cluster-arrow cluster-arrow-next" aria-label="Next camera" ${_modalClusterPage === cams.length - 1 ? 'style="display:none"' : ''}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="cluster-dots">${dotsHtml}</div>
+        <div class="modal-loading" id="modalLoading"><div class="spinner"></div></div>
+      `;
+
+      // Wire up carousel controls
+      const track = container.querySelector('.cluster-track');
+      const dots = container.querySelectorAll('.cluster-dot');
+      const prevBtn = container.querySelector('.cluster-arrow-prev');
+      const nextBtn = container.querySelector('.cluster-arrow-next');
+
+      function goToPage(page) {
+        if (page < 0 || page >= cams.length) return;
+        _modalClusterPage = page;
+        track.style.transform = `translateX(-${page * 100}%)`;
+        dots.forEach((d, i) => d.classList.toggle('active', i === page));
+        prevBtn.style.display = page === 0 ? 'none' : '';
+        nextBtn.style.display = page === cams.length - 1 ? 'none' : '';
+        // Update state
+        currentModalCamera = cams[page];
+        dom.modalName.textContent = cams[page].name;
+        _replaceCameraHash(cams[page].id);
+        TripMap.highlightMarker(cams[page].id);
+        TripMap.panTo(cams[page].lat, cams[page].lon);
+      }
+
+      prevBtn.addEventListener('click', () => goToPage(_modalClusterPage - 1));
+      nextBtn.addEventListener('click', () => goToPage(_modalClusterPage + 1));
+      dots.forEach(dot => dot.addEventListener('click', () => goToPage(parseInt(dot.dataset.idx))));
+
+      // Touch swipe on modal carousel
+      let touchStartX = 0, swiping = false;
+      track.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; swiping = false; }, { passive: true });
+      track.addEventListener('touchmove', (e) => {
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - (e.touches[0]._startY || e.touches[0].clientY);
+        if (!swiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) swiping = true;
+        if (swiping) e.preventDefault();
+      }, { passive: false });
+      track.addEventListener('touchend', (e) => {
+        if (!swiping) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (dx < -40) goToPage(_modalClusterPage + 1);
+        else if (dx > 40) goToPage(_modalClusterPage - 1);
+      }, { passive: true });
+
+      // Trackpad two-finger horizontal swipe
+      // Page once per gesture, then lock until inertia dies.
+      // Uses a short cooldown (250ms) so deliberate back-and-forth swiping feels snappy.
+      let wheelAccumX = 0;
+      let wheelLocked = false;
+      let wheelIdleTimer = null;
+
+      container.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Every event resets the idle timer; unlock after 250ms of silence
+        clearTimeout(wheelIdleTimer);
+        wheelIdleTimer = setTimeout(() => { wheelAccumX = 0; wheelLocked = false; }, 250);
+
+        if (wheelLocked) return;
+
+        wheelAccumX += e.deltaX;
+
+        if (Math.abs(wheelAccumX) >= 60) {
+          const dir = wheelAccumX > 0 ? 1 : -1;
+          const targetPage = _modalClusterPage + dir;
+
+          // Lock immediately — all subsequent inertia events are ignored
+          wheelAccumX = 0;
+          wheelLocked = true;
+
+          if (targetPage < 0 || targetPage >= cams.length) {
+            const rubberPx = dir * -30;
+            track.style.transition = 'none';
+            track.style.transform = `translateX(calc(-${_modalClusterPage * 100}% + ${rubberPx}px))`;
+            requestAnimationFrame(() => {
+              track.style.transition = 'transform 0.35s var(--spring-bounce)';
+              track.style.transform = `translateX(-${_modalClusterPage * 100}%)`;
+            });
+          } else {
+            goToPage(targetPage);
+          }
+        }
+      }, { passive: false });
+
+    } else {
+      // Single camera — just an image
+      const cam = currentModalCamera;
+      container.innerHTML = `
+        <img id="modalImage" alt="${cam.name}" src="${cacheBustUrl(cam.imageUrl || 'img/placeholder.svg')}">
+        <div class="modal-loading" id="modalLoading"><div class="spinner"></div></div>
+      `;
     }
+
+    // Setup loading state for all images in the container
+    const imgs = container.querySelectorAll('img');
+    const loading = container.querySelector('.modal-loading');
+    let pending = imgs.length;
+    if (loading) loading.classList.add('active');
+    imgs.forEach(img => {
+      if (img.complete) {
+        pending--;
+        if (pending <= 0 && loading) loading.classList.remove('active');
+      } else {
+        img.onload = () => { pending--; if (pending <= 0 && loading) loading.classList.remove('active'); };
+        img.onerror = () => { pending--; img.src = 'img/placeholder.svg'; if (pending <= 0 && loading) loading.classList.remove('active'); };
+      }
+    });
   }
 
   function closeModal() {
-    dom.modalOverlay.classList.remove('active');
+    if (!dom.modalOverlay.classList.contains('active')) return;
+    _closeModalVisual();
+    _clearCameraHash();
+  }
+
+  // Visual close with reverse FLIP animation (also used by popstate)
+  function _closeModalVisual() {
+    if (!dom.modalOverlay.classList.contains('active')) return;
+
+    const sourceCard = _modalSourceCardEl;
+    const thumbImg = _getCardThumbImg(sourceCard);
+    const canFlip = thumbImg && _isCardVisible(sourceCard) && !_prefersReducedMotion();
+
+    if (canFlip) {
+      // Measure positions while modal is still visible
+      const modalImgContainer = dom.modal.querySelector('.modal-image-container');
+      const visibleImg = modalImgContainer.querySelector('.cluster-slide img, :scope > img');
+      const modalRect = modalImgContainer.getBoundingClientRect();
+      const cardRect = thumbImg.getBoundingClientRect();
+
+      // Create clone at the modal's exact position (on top of the real image)
+      const clone = document.createElement('img');
+      clone.className = 'modal-transition-clone to-modal';
+      clone.src = (visibleImg && visibleImg.src) || 'img/placeholder.svg';
+      clone.style.top = modalRect.top + 'px';
+      clone.style.left = modalRect.left + 'px';
+      clone.style.width = modalRect.width + 'px';
+      clone.style.height = modalRect.height + 'px';
+      document.body.appendChild(clone);
+
+      // NOW hide the modal (clone is covering the image so it's seamless)
+      dom.modal.style.opacity = '0';
+      // Start fading the overlay backdrop (CSS transition handles the fade)
+      dom.modalOverlay.classList.remove('active');
+
+      // Animate clone from modal position → card position
+      requestAnimationFrame(() => {
+        clone.classList.remove('to-modal');
+        clone.style.top = cardRect.top + 'px';
+        clone.style.left = cardRect.left + 'px';
+        clone.style.width = cardRect.width + 'px';
+        clone.style.height = cardRect.height + 'px';
+        clone.style.borderRadius = '16px';
+      });
+
+      // Clean up after animation completes
+      let cleaned = false;
+      const done = () => {
+        if (cleaned) return;
+        cleaned = true;
+        clone.remove();
+        _resetModalState();
+      };
+      clone.addEventListener('transitionend', (e) => {
+        if (e.propertyName === 'top' || e.propertyName === 'width') done();
+      });
+      setTimeout(done, 600);
+    } else {
+      // No FLIP — just fade out
+      dom.modalOverlay.classList.remove('active');
+      _resetModalState();
+    }
+  }
+
+  function _resetModalState() {
+    dom.modal.style.opacity = '';
+    dom.modal.style.transform = '';
     document.body.style.overflow = '';
     currentModalCamera = null;
-    stopAutoRefresh();
-    dom.autoRefreshToggle.checked = false;
+    _modalSourceCardEl = null;
   }
 
-  function toggleAutoRefresh() {
-    if (dom.autoRefreshToggle.checked) {
-      startAutoRefresh();
+  // ── URL Hash Routing for Shareable Cameras ──────────────────
+
+  function _pushCameraHash(camId) {
+    // Preserve existing route hash params, add camera
+    const base = _getRouteHashBase();
+    const newHash = base ? `${base}&camera=${camId}` : `camera=${camId}`;
+    if (window.location.hash !== '#' + newHash) {
+      history.pushState({ camera: camId }, '', '#' + newHash);
+    }
+  }
+
+  function _replaceCameraHash(camId) {
+    const base = _getRouteHashBase();
+    const newHash = base ? `${base}&camera=${camId}` : `camera=${camId}`;
+    history.replaceState({ camera: camId }, '', '#' + newHash);
+  }
+
+  function _clearCameraHash() {
+    const base = _getRouteHashBase();
+    if (base) {
+      history.replaceState(null, '', '#' + base);
     } else {
-      stopAutoRefresh();
+      history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   }
 
-  function startAutoRefresh() {
-    stopAutoRefresh();
-    autoRefreshInterval = setInterval(() => {
-      if (!currentModalCamera) return;
-      const cam = currentModalCamera;
-      dom.modalLoading.classList.add('active');
-      const img = new Image();
-      img.onload = () => {
-        dom.modalImage.src = img.src;
-        dom.modalLoading.classList.remove('active');
-        updateLastRefreshed();
-      };
-      img.onerror = () => {
-        dom.modalLoading.classList.remove('active');
-      };
-      // Cache-bust (use Date.now() here — modal auto-refresh should show latest)
-      const sep = cam.imageUrl.includes('?') ? '&' : '?';
-      img.src = cam.imageUrl + sep + '_t=' + Date.now();
-    }, 15000); // every 15 seconds
+  function _getRouteHashBase() {
+    // Extract from/to params from current hash, excluding camera
+    const hash = window.location.hash.slice(1);
+    if (!hash) return '';
+    const params = new URLSearchParams(hash);
+    params.delete('camera');
+    return params.toString();
   }
 
-  function stopAutoRefresh() {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-      autoRefreshInterval = null;
-    }
+  function _getCameraIdFromHash() {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return null;
+    const params = new URLSearchParams(hash);
+    return params.get('camera') || null;
   }
 
-  function updateLastRefreshed() {
-    const now = new Date();
-    dom.lastRefreshed.textContent = `Updated ${now.toLocaleTimeString()}`;
+  function _openCameraFromHash() {
+    const camId = _getCameraIdFromHash();
+    if (!camId) return;
+    const cam = filteredCameras.find(c => c.id === camId) ||
+                allCameras.find(c => c.id === camId);
+    if (!cam) return;
+
+    // Find cluster
+    const clusterIdx = _clusterByCamId.get(cam.id);
+    const cluster = clusterIdx !== undefined ? filteredClusters[clusterIdx] : null;
+    const sourceCard = _findSourceCard(cam.id);
+
+    _modalOpenedViaHistory = true;
+    openModal(cam, cluster, sourceCard);
+    _modalOpenedViaHistory = false;
   }
+
 
   // ── Online/Offline ───────────────────────────────────────────
 
