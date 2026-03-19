@@ -36,15 +36,34 @@ const Cameras = (() => {
   }
 
   // Minimum distance from a point to a polyline in km
-  function pointToPolylineDistance(lat, lon, waypoints) {
+  // For dense polylines (OSRM geometry), uses bounding-box pre-filter to skip
+  // segments that are clearly too far away, avoiding expensive haversine calls.
+  function pointToPolylineDistance(lat, lon, waypoints, bufferKm) {
     let minDist = Infinity;
+    // Convert buffer to approximate degree threshold for bbox pre-filter
+    // 1 degree latitude ≈ 111km, 1 degree longitude ≈ 111km * cos(lat)
+    const bufferDeg = bufferKm ? (bufferKm / 111) * 1.5 : 0; // 1.5x safety margin
+    const useBbox = bufferDeg > 0 && waypoints.length > 50;
+
     for (let i = 0; i < waypoints.length - 1; i++) {
-      const d = pointToSegmentDistance(
-        lat, lon,
-        waypoints[i].lat, waypoints[i].lon,
-        waypoints[i + 1].lat, waypoints[i + 1].lon
-      );
-      if (d < minDist) minDist = d;
+      const aLat = waypoints[i].lat, aLon = waypoints[i].lon;
+      const bLat = waypoints[i + 1].lat, bLon = waypoints[i + 1].lon;
+
+      // Bounding-box pre-filter: skip segments clearly outside buffer range
+      if (useBbox) {
+        const minLat = Math.min(aLat, bLat) - bufferDeg;
+        const maxLat = Math.max(aLat, bLat) + bufferDeg;
+        const minLon = Math.min(aLon, bLon) - bufferDeg;
+        const maxLon = Math.max(aLon, bLon) + bufferDeg;
+        if (lat < minLat || lat > maxLat || lon < minLon || lon > maxLon) continue;
+      }
+
+      const d = pointToSegmentDistance(lat, lon, aLat, aLon, bLat, bLon);
+      if (d < minDist) {
+        minDist = d;
+        // Early exit if we're essentially on the road
+        if (minDist < 0.1) return minDist;
+      }
     }
     return minDist;
   }
@@ -181,7 +200,7 @@ const Cameras = (() => {
     // Check for highway keywords
     if (AB_HIGHWAY_KEYWORDS.some(kw => name.includes(kw))) return true;
     // Check for numbered highway pattern (e.g., "Hwy 1", "Highway 2")
-    if (/\bhwy\s*\d|highway\s*\d|\b(ab-)?[12]\s/i.test(name)) return true;
+    if (/\bhwy\s*\d|highway\s*\d/i.test(name)) return true;
     // Filter out cameras clearly in urban Calgary/Edmonton (named after streets)
     const urbanPatterns = /\b(ave|avenue|street|st|drive|dr|boulevard|blvd|trail|road|rd|way|crescent|gate)\b/i;
     if (urbanPatterns.test(cam.highway) && !/(highway|hwy)/i.test(cam.highway)) return false;
@@ -192,6 +211,19 @@ const Cameras = (() => {
   let _corridorCache = { waypointKey: '', distances: new Map() };
 
   function getCorridorCacheKey(waypoints) {
+    // For dense geometry (OSRM), sample a subset of points for the cache key
+    // to avoid serializing thousands of coordinates
+    if (waypoints.length > 50) {
+      const step = Math.floor(waypoints.length / 20);
+      const samples = [];
+      for (let i = 0; i < waypoints.length; i += step) {
+        samples.push(`${waypoints[i].lat.toFixed(3)},${waypoints[i].lon.toFixed(3)}`);
+      }
+      // Always include the last point
+      const last = waypoints[waypoints.length - 1];
+      samples.push(`${last.lat.toFixed(3)},${last.lon.toFixed(3)}`);
+      return `dense:${waypoints.length}:${samples.join('|')}`;
+    }
     return waypoints.map(w => `${w.lat.toFixed(3)},${w.lon.toFixed(3)}`).join('|');
   }
 
@@ -207,7 +239,7 @@ const Cameras = (() => {
       if (!isHighwayCamera(cam)) return false;
       let dist = distCache.get(cam.id);
       if (dist === undefined) {
-        dist = pointToPolylineDistance(cam.lat, cam.lon, waypoints);
+        dist = pointToPolylineDistance(cam.lat, cam.lon, waypoints, bufferKm);
         distCache.set(cam.id, dist);
       }
       return dist <= bufferKm;

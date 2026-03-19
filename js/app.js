@@ -8,6 +8,7 @@ const App = (() => {
   let allCameras = [];
   let filteredCameras = [];
   let currentWaypoints = [];
+  let currentRouteGeometry = null; // Dense OSRM road geometry for precise filtering
   let fromStop = null;
   let toStop = null;
   let dropdownTarget = null; // 'from' or 'to'
@@ -410,9 +411,24 @@ const App = (() => {
   function updateRoute() {
     if (!routeData || !fromStop || !toStop) return;
     currentWaypoints = Cameras.findRoute(routeData, fromStop.id, toStop.id);
+    currentRouteGeometry = null; // Reset until OSRM geometry loads
     _lastFilteredIds = ''; // Reset so filters re-render for new route
     TripMap.drawRoute(currentWaypoints);
     TripMap.fitToRoute(currentWaypoints);
+
+    // Fetch precise OSRM road geometry for filtering
+    TripMap.fetchRoadGeometry(currentWaypoints)
+      .then(latlngs => {
+        // Convert [lat, lon] arrays to {lat, lon} objects for cameras.js
+        currentRouteGeometry = latlngs.map(p => ({ lat: p[0], lon: p[1] }));
+        // Re-filter with precise geometry and tight buffer
+        _lastFilteredIds = '';
+        applyFilters();
+      })
+      .catch(e => {
+        console.warn('Could not fetch route geometry for filtering:', e.message);
+        // Keep using straight-line waypoints with wider buffer
+      });
   }
 
   // ── Snap to Current Location ─────────────────────────────────
@@ -517,14 +533,19 @@ const App = (() => {
   let _lastFilteredIds = ''; // Track last rendered set to skip no-op re-renders
 
   function applyFilters() {
+    // Use OSRM geometry with tight buffer when available, fall back to waypoints
+    const useGeometry = currentRouteGeometry && currentRouteGeometry.length > 0;
+    const filterPath = useGeometry ? currentRouteGeometry : currentWaypoints;
+    const buffer = useGeometry ? 2 : (routeData?.corridorBuffer || 25);
+
     // Filter by corridor
-    let cameras = currentWaypoints.length > 0
-      ? Cameras.filterByCorridor(allCameras, currentWaypoints, routeData?.corridorBuffer || 30)
+    let cameras = filterPath.length > 0
+      ? Cameras.filterByCorridor(allCameras, filterPath, buffer)
       : allCameras;
 
     // Sort by route order
-    if (currentWaypoints.length > 0) {
-      cameras = Cameras.sortByRoute(cameras, currentWaypoints);
+    if (filterPath.length > 0) {
+      cameras = Cameras.sortByRoute(cameras, filterPath);
     }
 
     // Skip re-render if the camera list hasn't changed

@@ -74,7 +74,7 @@ const TripMap = (() => {
     ], { padding: [20, 20] });
   }
 
-  const ROUTE_STYLE = {
+  const ROUTE_STYLE_FALLBACK = {
     color: '#2DB84B',
     weight: 3,
     opacity: 0.5,
@@ -82,11 +82,19 @@ const TripMap = (() => {
     lineCap: 'round',
   };
 
-  function drawRouteLine(latlngs) {
+  const ROUTE_STYLE_PRECISE = {
+    color: '#2DB84B',
+    weight: 4,
+    opacity: 0.7,
+    lineCap: 'round',
+    lineJoin: 'round',
+  };
+
+  function drawRouteLine(latlngs, style) {
     if (routeLine) {
       map.removeLayer(routeLine);
     }
-    routeLine = L.polyline(latlngs, ROUTE_STYLE).addTo(map);
+    routeLine = L.polyline(latlngs, style || ROUTE_STYLE_FALLBACK).addTo(map);
   }
 
   const ROUTE_CACHE_KEY = 'tripcams_route_geo';
@@ -137,14 +145,14 @@ const TripMap = (() => {
     }
     if (!waypoints || waypoints.length < 2) return;
 
-    // Draw straight-line immediately as placeholder
+    // Draw straight-line immediately as dashed placeholder
     const straight = waypoints.map(w => [w.lat, w.lon]);
-    drawRouteLine(straight);
+    drawRouteLine(straight, ROUTE_STYLE_FALLBACK);
 
-    // Then fetch and replace with actual road geometry
+    // Then fetch and replace with actual road geometry (solid line)
     try {
       const roadPath = await fetchRoadGeometry(waypoints);
-      drawRouteLine(roadPath);
+      drawRouteLine(roadPath, ROUTE_STYLE_PRECISE);
     } catch (e) {
       // Keep the straight-line fallback already drawn
       console.warn('Could not fetch road geometry, using straight line:', e.message);
@@ -340,6 +348,7 @@ const TripMap = (() => {
   return {
     init,
     drawRoute,
+    fetchRoadGeometry,
     fitToRoute,
     setMarkers,
     highlightMarker,
