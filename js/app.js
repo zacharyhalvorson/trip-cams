@@ -604,6 +604,8 @@ const App = (() => {
       reversed = dFromLast < dFromFirst;
     }
     filteredClusters = Cameras.clusterCameras(cameras);
+    // Reverse cluster order so the list matches travel direction (origin → destination)
+    if (reversed) filteredClusters.reverse();
     _clusterByCamId = new Map();
     filteredClusters.forEach((cluster, idx) => {
       if (sortPath.length >= 2) {
@@ -1006,7 +1008,7 @@ const App = (() => {
 
   /** Bottom padding for fitToRoute so the route clears the peeking sheet. */
   function sheetPeekPadding() {
-    return (!isWideLayout() && !sheetRevealed) ? 180 : 40;
+    return (!isWideLayout() && !sheetRevealed) ? 140 : 40;
   }
 
   function setupScrollTracking(cameras) {
@@ -1216,20 +1218,44 @@ const App = (() => {
     document.body.classList.add('sheet-expanded');
     dom.cameraList.style.overflowY = '';
     TripMap.invalidateSize();
-    // Zoom map to fit the cameras visible in the list
+    // After sheet transition completes, animate map to show the first visible cameras
     setTimeout(() => {
-      const visibleIds = new Set();
-      for (const card of dom.cameraList.querySelectorAll('.camera-card')) {
-        const rect = card.getBoundingClientRect();
+      TripMap.invalidateSize();
+      requestAnimationFrame(() => {
+        // Find the top camera card visible in the list
         const listRect = dom.cameraList.getBoundingClientRect();
-        if (rect.top < listRect.bottom && rect.bottom > listRect.top) {
-          visibleIds.add(card.dataset.id);
+        const cards = dom.cameraList.querySelectorAll('.camera-card');
+        let topCamId = null;
+        for (const card of cards) {
+          const rect = card.getBoundingClientRect();
+          if (rect.bottom > listRect.top + 10) {
+            topCamId = card.dataset.id;
+            break;
+          }
         }
-      }
-      if (visibleIds.size > 0) {
-        TripMap.fitToVisible(visibleIds);
-      }
-    }, 200);
+        // Pan & zoom to the focused camera's position on the route
+        if (topCamId) {
+          const cam = filteredCameras.find(c => c.id === topCamId);
+          if (cam) {
+            TripMap.panTo(cam.lat, cam.lon, 10);
+            TripMap.highlightMarkerVisual(topCamId);
+            TripMap.focusMarker(topCamId);
+          }
+        } else {
+          // Fallback: fit to all visible cameras
+          const visibleIds = new Set();
+          for (const card of cards) {
+            const rect = card.getBoundingClientRect();
+            if (rect.top < listRect.bottom && rect.bottom > listRect.top) {
+              visibleIds.add(card.dataset.id);
+            }
+          }
+          if (visibleIds.size > 0) {
+            TripMap.fitToVisible(visibleIds);
+          }
+        }
+      });
+    }, 350);
   }
 
   function collapseSheet() {
@@ -1242,7 +1268,7 @@ const App = (() => {
     dom.cameraList.style.overflowY = 'hidden';
     dom.cameraList.scrollTop = 0;
     TripMap.invalidateSize();
-    setTimeout(() => TripMap.fitToRoute(currentWaypoints, { paddingBottom: 180 }), 200);
+    setTimeout(() => TripMap.fitToRoute(currentWaypoints, { paddingBottom: 140 }), 200);
   }
 
   // ── List scroll interactions (reveal, pull-to-refresh) ───────

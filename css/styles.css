@@ -691,7 +691,7 @@ button {
 }
 
 .sheet.peeking {
-  top: calc(100dvh - 160px);
+  top: calc(100dvh - 120px);
 }
 
 .sheet.revealed {
@@ -777,17 +777,26 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  /* Centre vertically between handle and bottom of peeking sheet */
-  top: calc(50% + 12px);
-  transform: translateY(-50%);
-  height: auto !important;
+  /* Centre vertically between handle bar and first camera card.
+     Peeking sheet = 120px, handle = ~24px, so visible list area ≈ 96px.
+     Place spinner at the midpoint of that visible area. */
+  top: 0;
+  height: 80px !important;
   overflow: visible;
   opacity: 1;
   z-index: 3;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .ptr.loading .ptr-spinner svg {
-  animation: spin 0.7s linear infinite;
+  animation: ptrFade 1.2s ease-in-out infinite;
+}
+
+@keyframes ptrFade {
+  0%, 100% { opacity: 0.2; transform: scale(0.92); }
+  50%      { opacity: 1;   transform: scale(1); }
 }
 
 /* Centre pull spinner between handle and first card when sheet is collapsed */
@@ -807,7 +816,7 @@ button {
 }
 
 .ptr.refreshing .ptr-spinner svg {
-  animation: spin 0.7s linear infinite;
+  animation: ptrFade 1.2s ease-in-out infinite;
 }
 
 .camera-card {
