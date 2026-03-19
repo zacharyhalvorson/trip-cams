@@ -613,6 +613,11 @@ const App = (() => {
 
     renderCameraList(filteredClusters);
     TripMap.setMarkers(cameras, onMarkerClick);
+
+    // Auto-reveal the bottom sheet on narrow viewports once cameras are available
+    if (!sheetRevealed && !isWideLayout() && cameras.length > 0) {
+      revealSheet();
+    }
   }
 
   // ── Camera List Rendering ────────────────────────────────────
@@ -1173,7 +1178,29 @@ const App = (() => {
   }
 
   function centerMap() {
-    if (currentWaypoints.length > 0) {
+    if (userLocation) {
+      snapToCurrentLocation();
+      return;
+    }
+    // Try to get location on demand
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          TripMap.showUserLocation(latitude, longitude);
+          const nearest = Cameras.nearestStop(latitude, longitude, allStops);
+          if (nearest) {
+            userLocation = { lat: latitude, lon: longitude, nearestStop: nearest };
+          }
+          snapToCurrentLocation();
+        },
+        () => {
+          // Denied — fall back to fitting route
+          if (currentWaypoints.length > 0) TripMap.fitToRoute(currentWaypoints);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else if (currentWaypoints.length > 0) {
       TripMap.fitToRoute(currentWaypoints);
     }
   }

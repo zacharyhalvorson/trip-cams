@@ -579,10 +579,31 @@ button {
   color: var(--text-secondary);
 }
 
+/* Hide Leaflet attribution — keep in DOM for legal compliance, just visually minimal */
+.leaflet-control-attribution {
+  font-size: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.map-container:hover .leaflet-control-attribution,
+.map-container:active .leaflet-control-attribution {
+  font-size: 9px;
+  opacity: 0.5;
+  pointer-events: auto;
+}
+
+.leaflet-control-attribution a {
+  color: inherit !important;
+}
+
 .map-center-btn {
   position: absolute;
-  bottom: 72px;
-  right: 12px;
+  bottom: 64px;
+  right: 16px;
   z-index: 500;
   width: 40px;
   height: 40px;
@@ -604,8 +625,8 @@ button {
 
 .map-toggle {
   position: absolute;
-  bottom: 24px;
-  right: 12px;
+  bottom: 16px;
+  right: 16px;
   z-index: 500;
   width: 40px;
   height: 40px;
