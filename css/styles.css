@@ -726,8 +726,7 @@ button {
 }
 
 .camera-card.focused {
-  border-color: var(--green);
-  box-shadow: 0 0 0 2px rgba(45, 184, 75, 0.2);
+  border-color: var(--border-light);
 }
 
 .camera-thumb {
@@ -752,30 +751,50 @@ button {
   opacity: 0.5;
 }
 
-.camera-thumb .thumb-region {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 6px;
+.thumb-overlay .thumb-region {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  opacity: 0.8;
 }
 
-.thumb-region.AB { background: rgba(245, 158, 11, 0.9); color: #1a1a2e; }
-.thumb-region.BC { background: rgba(59, 130, 246, 0.9); color: white; }
-.thumb-region.WA { background: rgba(139, 92, 246, 0.9); color: white; }
+.thumb-region.AB { background: rgba(245, 158, 11, 0.75); color: #1a1a2e; }
+.thumb-region.BC { background: rgba(59, 130, 246, 0.75); color: white; }
+.thumb-region.WA { background: rgba(139, 92, 246, 0.75); color: white; }
 
-.camera-info {
+.thumb-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 10px 8px;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thumb-overlay .camera-name {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 12px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.thumb-overlay .camera-status {
+  flex-shrink: 0;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
 .camera-name {
@@ -849,8 +868,13 @@ button {
 }
 
 .camera-card-disabled .thumb-region {
-  position: static;
   flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .camera-card-disabled .camera-name {
@@ -890,39 +914,46 @@ button {
 }
 
 .skeleton-card {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  margin-bottom: 8px;
+  position: relative;
+  margin-bottom: 10px;
   background: var(--navy-card);
   border-radius: 16px;
   border: 1px solid var(--border-light);
+  overflow: hidden;
 }
 
-.skeleton-img {
-  width: 120px;
-  height: 90px;
-  border-radius: 12px;
+.skeleton-img-full {
+  width: 100%;
+  aspect-ratio: 16 / 9;
   background: linear-gradient(110deg, var(--navy) 30%, var(--surface-raised) 50%, var(--navy) 70%);
   background-size: 200% 100%;
   animation: shimmer 1.5s linear infinite;
-  flex-shrink: 0;
 }
 
-.skeleton-text {
-  flex: 1;
+.skeleton-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 10px 8px;
+  background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
-  justify-content: center;
+}
+
+.skeleton-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  flex-shrink: 0;
 }
 
 .skeleton-line {
   height: 14px;
   border-radius: 7px;
-  background: linear-gradient(110deg, var(--navy) 30%, var(--surface-raised) 50%, var(--navy) 70%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s linear infinite;
+  background: rgba(255,255,255,0.15);
 }
 
 .skeleton-line.w70 { width: 70%; }

@@ -126,6 +126,10 @@ const App = (() => {
     registerServiceWorker();
     TripMap.init();
 
+    // Sync CSS --header-height with actual header size
+    const hh = document.querySelector('.header').offsetHeight;
+    document.documentElement.style.setProperty('--header-height', hh + 'px');
+
     // On wide layouts, the expanded view is always active
     function syncExpandedClass() {
       if (isWideLayout()) {
@@ -541,17 +545,29 @@ const App = (() => {
 
   // ── Camera List Rendering ────────────────────────────────────
 
+  function formatAge(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    const mins = Math.round((Date.now() - d) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }
+
   function removeCameraCards() {
     const cards = dom.cameraList.querySelectorAll('.camera-card, .empty-state');
     cards.forEach(c => c.remove());
   }
 
-  function buildCameraCard(cam, index) {
+  function buildCameraCard(cam, index, showRegion) {
     const card = document.createElement('div');
     card.dataset.id = cam.id;
     card.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
 
     const hasImage = cam.imageUrl && cam.status === 'active';
+    const regionBadge = showRegion ? `<span class="thumb-region ${cam.region}">${cam.region}</span>` : '';
 
     if (hasImage) {
       card.className = 'camera-card';
@@ -563,20 +579,13 @@ const App = (() => {
                alt="${cam.name}"
                width="640" height="360"
                loading="lazy">
-          <span class="thumb-region ${cam.region}">${cam.region}</span>
-        </div>
-        <div class="camera-info">
-          <div class="camera-name">${cam.name}</div>
-          <div class="camera-highway">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-              <circle cx="12" cy="9" r="2.5"/>
-            </svg>
-            ${cam.highway}${cam.direction ? ' · ' + cam.direction : ''}
-          </div>
-          <div class="camera-status">
-            <span class="status-dot"></span>
-            Live
+          <div class="thumb-overlay">
+            ${regionBadge}
+            <div class="camera-name">${cam.name}</div>
+            <div class="camera-status">
+              <span class="status-dot"></span>
+              ${cam.lastUpdated ? formatAge(cam.lastUpdated) : ''}
+            </div>
           </div>
         </div>
       `;
@@ -584,7 +593,7 @@ const App = (() => {
     } else {
       card.className = 'camera-card camera-card-disabled';
       card.innerHTML = `
-        <span class="thumb-region ${cam.region}">${cam.region}</span>
+        ${regionBadge}
         <span class="camera-name">${cam.name}</span>
         <span class="camera-highway-inline">${cam.highway}${cam.direction ? ' · ' + cam.direction : ''}</span>
         <span class="camera-status offline"><span class="status-dot"></span>Offline</span>
@@ -615,12 +624,16 @@ const App = (() => {
       return;
     }
 
+    // Only show region badges when cameras span multiple regions
+    const regions = new Set(cameras.map(c => c.region));
+    const showRegion = regions.size > 1;
+
     // Render first batch immediately for fast initial paint
     const firstBatch = cameras.slice(0, INITIAL_RENDER_BATCH);
     const restBatch = cameras.slice(INITIAL_RENDER_BATCH);
 
     const fragment = document.createDocumentFragment();
-    firstBatch.forEach((cam, i) => fragment.appendChild(buildCameraCard(cam, i)));
+    firstBatch.forEach((cam, i) => fragment.appendChild(buildCameraCard(cam, i, showRegion)));
     dom.cameraList.appendChild(fragment);
 
     // Defer remaining cards to next frame so UI is interactive sooner
@@ -629,7 +642,7 @@ const App = (() => {
         _pendingRenderRaf = null;
         const restFragment = document.createDocumentFragment();
         restBatch.forEach((cam, i) =>
-          restFragment.appendChild(buildCameraCard(cam, INITIAL_RENDER_BATCH + i))
+          restFragment.appendChild(buildCameraCard(cam, INITIAL_RENDER_BATCH + i, showRegion))
         );
         dom.cameraList.appendChild(restFragment);
 
@@ -731,6 +744,7 @@ const App = (() => {
     if (!('IntersectionObserver' in window)) return;
 
     const visibleIds = new Set();
+    let fitDebounce = null;
 
     scrollTrackingObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
@@ -742,10 +756,11 @@ const App = (() => {
         }
       }
       TripMap.highlightVisible(visibleIds);
-      // When sheet is expanded, zoom map to show visible cameras
-      // (but not if the map itself triggered this scroll)
-      if (sheetExpanded && !_mapInitiatedScroll) {
-        TripMap.fitToVisible(visibleIds);
+      // On mobile with sheet expanded, zoom map to fit visible cameras
+      // On desktop, updateFocusedCamera handles panning instead
+      if (sheetExpanded && !isWideLayout() && !_mapInitiatedScroll) {
+        clearTimeout(fitDebounce);
+        fitDebounce = setTimeout(() => TripMap.fitToVisible(visibleIds), 300);
       }
     }, {
       root: dom.cameraList,

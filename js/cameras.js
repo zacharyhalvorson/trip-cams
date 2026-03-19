@@ -177,15 +177,13 @@ const Cameras = (() => {
   function isHighwayCamera(cam) {
     // BC and WA cameras are already highway cameras
     if (cam.region !== 'AB') return true;
-    const name = (cam.name + ' ' + cam.highway).toLowerCase();
-    // Check for highway keywords
-    if (AB_HIGHWAY_KEYWORDS.some(kw => name.includes(kw))) return true;
-    // Check for numbered highway pattern (e.g., "Hwy 1", "Highway 2")
-    if (/\bhwy\s*\d|highway\s*\d|\b(ab-)?[12]\s/i.test(name)) return true;
-    // Filter out cameras clearly in urban Calgary/Edmonton (named after streets)
-    const urbanPatterns = /\b(ave|avenue|street|st|drive|dr|boulevard|blvd|trail|road|rd|way|crescent|gate)\b/i;
-    if (urbanPatterns.test(cam.highway) && !/(highway|hwy)/i.test(cam.highway)) return false;
-    return true;
+    const text = (cam.name + ' ' + cam.highway).toLowerCase();
+    // Include if it matches known highway keywords
+    if (AB_HIGHWAY_KEYWORDS.some(kw => text.includes(kw))) return true;
+    // Include if highway field explicitly says "Hwy N" or "Highway N"
+    if (/\bhwy\s*\d|highway\s*\d/i.test(cam.highway)) return true;
+    // Exclude everything else — urban cameras, ring roads, etc.
+    return false;
   }
 
   // Cache corridor distance results to avoid recomputing for same camera+route
