@@ -656,6 +656,11 @@ button {
   overscroll-behavior: contain;
   padding: 28px 12px 0;
   padding-bottom: calc(var(--safe-bottom) + 20px);
+  scrollbar-width: none;
+}
+
+.camera-list::-webkit-scrollbar {
+  display: none;
 }
 
 /* Pull-to-refresh */
@@ -721,8 +726,8 @@ button {
 }
 
 .camera-card.highlighted {
-  border-color: var(--green);
-  background: rgba(45, 184, 75, 0.06);
+  border-color: var(--border);
+  background: var(--surface-raised);
 }
 
 .camera-card.focused {
@@ -1248,9 +1253,9 @@ button {
     position: fixed;
     top: var(--header-height);
     left: 50%;
-    right: 12px;
+    right: 0;
     bottom: 0;
-    border-radius: 20px 20px 0 0;
+    border-radius: 0;
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
   }
 
@@ -1264,7 +1269,8 @@ button {
   }
 
   .camera-list {
-    padding-top: 12px;
+    padding: 12px 12px 0;
+    padding-bottom: calc(var(--safe-bottom) + 20px);
   }
 
   .modal {
