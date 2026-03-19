@@ -158,11 +158,16 @@ const TripMap = (() => {
     }
   }
 
-  function fitToRoute(waypoints) {
+  function fitToRoute(waypoints, opts) {
     if (!waypoints || waypoints.length < 2) return;
     const latlngs = waypoints.map(w => [w.lat, w.lon]);
     _markProgrammatic();
-    map.fitBounds(latlngs, { padding: [40, 40], maxZoom: 10 });
+    const paddingBottom = (opts && opts.paddingBottom) || 40;
+    map.fitBounds(latlngs, {
+      paddingTopLeft: [40, 40],
+      paddingBottomRight: [40, paddingBottom],
+      maxZoom: 10,
+    });
   }
 
   function createMarkerIcon(region) {

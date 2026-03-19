@@ -762,6 +762,12 @@ button {
   opacity: 1;
 }
 
+/* Centre spinner between handle and first card when sheet is collapsed */
+.sheet.peeking .ptr.refreshing,
+.sheet.peeking .ptr.pulling {
+  margin-top: 20px;
+}
+
 .ptr-spinner {
   color: var(--text-muted);
   display: flex;
