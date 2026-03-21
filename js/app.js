@@ -11,6 +11,7 @@ const App = (() => {
   let _clusterByCamId = new Map(); // camera id -> cluster index for quick lookup
   let currentWaypoints = [];
   let currentRouteGeometry = null; // Dense OSRM road geometry for precise filtering
+  let _routeGeneration = 0; // Incremented on each route change to cancel stale loads
   let fromStop = null;
   let toStop = null;
   let dropdownTarget = null; // 'from' or 'to'
@@ -648,6 +649,7 @@ const App = (() => {
     if (!fromStop || !toStop) return;
 
     const customRoute = _isCustomRoute();
+    const generation = ++_routeGeneration; // Cancel any in-flight loads from previous route
 
     if (customRoute || !routeData) {
       // Custom locations: just use origin + destination, OSRM provides the path
@@ -666,6 +668,7 @@ const App = (() => {
     // Fetch precise OSRM road geometry for filtering
     TripMap.fetchRoadGeometry(currentWaypoints)
       .then(latlngs => {
+        if (generation !== _routeGeneration) return; // Stale — route changed since
         // Convert [lat, lon] arrays to {lat, lon} objects for cameras.js
         currentRouteGeometry = latlngs.map(p => ({ lat: p[0], lon: p[1] }));
         // Share geometry with API for California district optimization
@@ -677,21 +680,27 @@ const App = (() => {
         // For custom routes, detect regions from actual road geometry and load cameras
         // This is the primary camera load for custom routes (not loadCameras)
         if (customRoute) {
-          loadCamerasForGeometry();
+          loadCamerasForGeometry(generation);
         }
       })
       .catch(e => {
+        if (generation !== _routeGeneration) return;
         console.warn('Could not fetch route geometry for filtering:', e.message);
-        // Keep using straight-line waypoints with wider buffer
+        // For custom routes, fall back to straight-line filtering
+        if (customRoute) {
+          loadCamerasForGeometry(generation);
+        }
       });
   }
 
   // After OSRM geometry arrives for a custom route, detect regions and fetch cameras.
   // This is the primary camera loading path for custom routes — cameras are filtered
   // against the actual OSRM road geometry with a tight 2km buffer.
-  async function loadCamerasForGeometry() {
-    if (!currentRouteGeometry || currentRouteGeometry.length === 0) return;
-    const neededRegions = await API.getRegionsForRoute(currentRouteGeometry);
+  async function loadCamerasForGeometry(generation) {
+    const filterPath = currentRouteGeometry || currentWaypoints;
+    if (!filterPath || filterPath.length === 0) return;
+    const neededRegions = await API.getRegionsForRoute(filterPath);
+    if (generation !== _routeGeneration) return; // Route changed while detecting regions
     if (neededRegions.size === 0) {
       dom.skeletonList.classList.add('hidden');
       return;
@@ -703,12 +712,14 @@ const App = (() => {
     // Fetch cameras for detected regions
     const freshCameras = [];
     await API.fetchProgressive((region, result) => {
+      if (generation !== _routeGeneration) return; // Stale
       freshCameras.push(...(result.data || []));
       allCameras = freshCameras.slice();
       _lastFilteredIds = ''; // Force re-filter with each new batch
       applyFilters();
     }, neededRegions);
 
+    if (generation !== _routeGeneration) return; // Route changed during fetch
     if (freshCameras.length > 0) {
       allCameras = freshCameras;
       _lastFilteredIds = '';
@@ -812,6 +823,8 @@ const App = (() => {
   // ── Camera Loading ───────────────────────────────────────────
 
   async function loadCameras() {
+    const generation = _routeGeneration; // Capture current generation
+
     // For custom routes, don't load cameras here — wait for OSRM geometry
     // which triggers loadCamerasForGeometry() with precise corridor filtering.
     // With only 2 waypoints (origin + destination), the straight-line buffer
@@ -850,6 +863,7 @@ const App = (() => {
     const hadCachedData = cachedCameras && cachedCameras.length > 0;
 
     await API.fetchProgressive((region, result) => {
+      if (generation !== _routeGeneration) return; // Stale — route changed
       if (result.fromCache) anyFromCache = true;
       freshCameras.push(...(result.data || []));
       // Only re-render if we didn't have cached data, or if fresh data differs
@@ -858,6 +872,8 @@ const App = (() => {
         applyFilters();
       }
     }, neededRegions.size > 0 ? neededRegions : null);
+
+    if (generation !== _routeGeneration) return; // Route changed during fetch
 
     // Final update with all fresh data (even if we showed cached)
     if (freshCameras.length > 0) {
@@ -880,7 +896,11 @@ const App = (() => {
     // Use OSRM geometry with tight buffer when available, fall back to waypoints
     const useGeometry = currentRouteGeometry && currentRouteGeometry.length > 0;
     const filterPath = useGeometry ? currentRouteGeometry : currentWaypoints;
-    const buffer = useGeometry ? 1 : (routeData?.corridorBuffer || 25);
+    // OSRM geometry: 1km (road-level precision). Predefined waypoints: use configured
+    // buffer. Straight-line (2 waypoints, no geometry): 5km to avoid catching
+    // cameras on parallel highways near the route endpoints.
+    const buffer = useGeometry ? 1
+      : (currentWaypoints.length > 2 ? (routeData?.corridorBuffer || 25) : 5);
 
     // Filter by corridor
     let cameras = filterPath.length > 0
