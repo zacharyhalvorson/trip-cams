@@ -194,8 +194,7 @@ button {
   background: var(--green);
   color: white;
   flex-shrink: 0;
-  transition: transform var(--duration-fast) var(--spring-bounce),
-              background var(--duration-fast);
+  transition: background var(--duration-fast);
 }
 
 .swap-btn:hover {
@@ -203,7 +202,32 @@ button {
 }
 
 .swap-btn:active {
-  transform: scale(0.85) rotate(180deg);
+  transform: scale(0.92);
+}
+
+.swap-btn.animating {
+  animation: swap-bounce 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes swap-bounce {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  /* Wind up: pull back slightly in opposite direction */
+  18% {
+    transform: scale(0.88) rotate(-22deg);
+  }
+  /* Main rotation overshoots past 180 */
+  58% {
+    transform: scale(1.04) rotate(198deg);
+  }
+  /* Settle back with a tiny bounce */
+  78% {
+    transform: scale(0.98) rotate(177deg);
+  }
+  100% {
+    transform: scale(1) rotate(180deg);
+  }
 }
 
 /* =============================================================
