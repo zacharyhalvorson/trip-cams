@@ -1393,78 +1393,39 @@ const App = (() => {
     document.addEventListener('wheel', (e) => {
       if (isWideLayout()) return;
 
-      // Sheet not yet revealed — scroll-up reveals, scroll-down triggers PTR
+      // Sheet not yet revealed — any scroll gesture reveals it.
+      // Direction-agnostic so it works with both natural and traditional
+      // trackpad scrolling on macOS.
       if (!sheetRevealed) {
-        if (e.deltaY < 0) {
-          if (wheelCooldown) { e.preventDefault(); return; }
-          wheelAccum += Math.abs(e.deltaY);
-          e.preventDefault();
-          e.stopPropagation(); // prevent Leaflet map zoom
-          if (wheelAccum >= WHEEL_THRESHOLD) {
-            wheelAccum = 0;
-            wheelCooldown = true;
-            revealSheet();
-            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
-          }
-        } else if (e.deltaY > 0 && !isRefreshing) {
-          // Scroll down while collapsed → pull-to-refresh
-          if (wheelCooldown) { e.preventDefault(); return; }
-          wheelAccum += e.deltaY;
-          e.preventDefault();
-          e.stopPropagation();
-          if (wheelAccum >= WHEEL_THRESHOLD) {
-            wheelAccum = 0;
-            wheelCooldown = true;
-            isRefreshing = true;
-            ptr.classList.add('loading');
-            doRefresh().then(() => {
-              ptr.classList.remove('loading');
-              isRefreshing = false;
-            });
-            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
-          }
-        } else {
+        if (wheelCooldown) { e.preventDefault(); return; }
+        wheelAccum += Math.abs(e.deltaY);
+        e.preventDefault();
+        e.stopPropagation(); // prevent Leaflet map zoom
+        if (wheelAccum >= WHEEL_THRESHOLD) {
           wheelAccum = 0;
+          wheelCooldown = true;
+          revealSheet();
+          setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
         }
         return;
       }
 
-      // Sheet is revealed — handle scroll at the top of the list
-      if (list.scrollTop <= 0) {
-        if (e.deltaY > 0) {
-          // Scrolling down at top → collapse sheet
-          if (wheelCooldown) { e.preventDefault(); return; }
-          wheelAccum += e.deltaY;
-          e.preventDefault();
-          e.stopPropagation();
-          if (wheelAccum >= WHEEL_THRESHOLD) {
-            wheelAccum = 0;
-            wheelCooldown = true;
-            collapseSheet();
-            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
-          }
-        } else if (e.deltaY < 0 && !isRefreshing) {
-          // Scrolling up at top → pull-to-refresh
-          if (wheelCooldown) { e.preventDefault(); return; }
-          wheelAccum += Math.abs(e.deltaY);
-          e.preventDefault();
-          e.stopPropagation();
-          if (wheelAccum >= WHEEL_THRESHOLD) {
-            wheelAccum = 0;
-            wheelCooldown = true;
-            isRefreshing = true;
-            ptr.classList.add('refreshing');
-            doRefresh().then(() => {
-              ptr.classList.remove('refreshing');
-              isRefreshing = false;
-            });
-            setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
-          }
-        } else {
+      // Sheet is revealed — scrolling down past the top collapses it.
+      // deltaY > 0 = "content down" which maps to the physical gesture of
+      // pushing the sheet back down on both natural and traditional scrolling.
+      if (list.scrollTop <= 0 && e.deltaY > 0) {
+        if (wheelCooldown) { e.preventDefault(); return; }
+        wheelAccum += e.deltaY;
+        e.preventDefault();
+        e.stopPropagation();
+        if (wheelAccum >= WHEEL_THRESHOLD) {
           wheelAccum = 0;
+          wheelCooldown = true;
+          collapseSheet();
+          setTimeout(() => { wheelCooldown = false; }, WHEEL_COOLDOWN_MS);
         }
       } else {
-        // Scrolling mid-list — let native scroll handle it, reset accumulator
+        // Scrolling mid-list or upward — let native scroll handle it
         wheelAccum = 0;
       }
     }, { capture: true, passive: false });
