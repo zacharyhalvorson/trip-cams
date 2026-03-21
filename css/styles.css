@@ -1126,6 +1126,8 @@ button {
 
 .modal-transition-clone img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
@@ -1142,6 +1144,12 @@ button {
   padding: 12px 12px 28px;
   background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 60%, transparent 100%);
   pointer-events: none;
+  transition: opacity var(--duration) var(--ease-out);
+}
+
+/* Hide header overlay during FLIP animation, fade in after */
+.modal.flip-animating .modal-header {
+  opacity: 0;
 }
 
 .modal-header > * {

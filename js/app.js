@@ -1580,6 +1580,7 @@ const App = (() => {
       dom.modal.style.transition = 'none';
       dom.modal.style.opacity = '0';
       dom.modal.style.transform = 'translateY(0)';
+      dom.modal.classList.add('flip-animating');
       dom.modalOverlay.classList.add('active');
       document.body.style.overflow = 'hidden';
 
@@ -1596,12 +1597,14 @@ const App = (() => {
         const modalImgContainer = dom.modal.querySelector('.modal-image-container');
         const modalImg = modalImgContainer.querySelector('.cluster-slide img, :scope > img');
         const lastRect = modalImgContainer.getBoundingClientRect();
-        // Use the modal image's natural dimensions to compute target height
+        // Fall back to thumbnail aspect ratio if modal image hasn't loaded yet
         let targetHeight;
         if (modalImg && modalImg.naturalWidth && modalImg.naturalHeight) {
           targetHeight = lastRect.width * (modalImg.naturalHeight / modalImg.naturalWidth);
+        } else if (thumbImg.naturalWidth && thumbImg.naturalHeight) {
+          targetHeight = lastRect.width * (thumbImg.naturalHeight / thumbImg.naturalWidth);
         } else {
-          targetHeight = lastRect.height;
+          targetHeight = lastRect.width * 0.75; // 4:3 fallback
         }
 
         clone.style.top = lastRect.top + 'px';
@@ -1610,12 +1613,21 @@ const App = (() => {
         clone.style.height = targetHeight + 'px';
         clone.style.borderRadius = '16px 16px 0 0';
 
+        let cleaned = false;
         const cleanup = () => {
-          // Reveal the modal and remove the clone
-          dom.modal.style.transition = '';
-          dom.modal.style.opacity = '';
-          dom.modal.style.transform = '';
+          if (cleaned) return;
+          cleaned = true;
+          dom.modal.style.transition = 'none';
+          dom.modal.style.opacity = '1';
+          dom.modal.style.transform = 'translateY(0)';
+          void dom.modal.offsetHeight; // paint opacity:1 before removing clone
           if (_flipClone) { _flipClone.remove(); _flipClone = null; }
+          requestAnimationFrame(() => {
+            dom.modal.style.transition = '';
+            dom.modal.style.opacity = '';
+            dom.modal.style.transform = '';
+            dom.modal.classList.remove('flip-animating');
+          });
         };
         clone.addEventListener('transitionend', function onEnd(e) {
           if (e.propertyName !== 'top' && e.propertyName !== 'width') return;
