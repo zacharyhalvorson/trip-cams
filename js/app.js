@@ -1545,6 +1545,8 @@ const App = (() => {
 
     if (canFlip) {
       const firstRect = thumbImg.getBoundingClientRect();
+      const cardRect = sourceCard.getBoundingClientRect();
+      const cardRadius = getComputedStyle(sourceCard).borderRadius || '16px';
 
       // Keep modal invisible during the FLIP; suppress its own CSS transition
       dom.modal.style.transition = 'none';
@@ -1553,14 +1555,16 @@ const App = (() => {
       dom.modalOverlay.classList.add('active');
       document.body.style.overflow = 'hidden';
 
-      const clone = document.createElement('img');
+      const clone = document.createElement('div');
       clone.className = 'modal-transition-clone';
-      clone.src = thumbImg.src || thumbImg.dataset.src || 'img/placeholder.svg';
+      const cloneImg = document.createElement('img');
+      cloneImg.src = thumbImg.src || thumbImg.dataset.src || 'img/placeholder.svg';
+      clone.appendChild(cloneImg);
       clone.style.top = firstRect.top + 'px';
       clone.style.left = firstRect.left + 'px';
       clone.style.width = firstRect.width + 'px';
       clone.style.height = firstRect.height + 'px';
-      clone.style.borderRadius = '16px';
+      clone.style.borderRadius = cardRadius;
       document.body.appendChild(clone);
       _flipClone = clone;
 
@@ -1569,12 +1573,22 @@ const App = (() => {
 
       requestAnimationFrame(() => {
         const modalImgContainer = dom.modal.querySelector('.modal-image-container');
+        const modalImg = modalImgContainer.querySelector('.cluster-slide img, :scope > img');
+        // Use the modal image's natural dimensions to compute target height
+        const modalWidth = modalImgContainer.getBoundingClientRect().width;
+        let targetHeight;
+        if (modalImg && modalImg.naturalWidth && modalImg.naturalHeight) {
+          targetHeight = modalWidth * (modalImg.naturalHeight / modalImg.naturalWidth);
+        } else {
+          targetHeight = modalImgContainer.getBoundingClientRect().height;
+        }
         const lastRect = modalImgContainer.getBoundingClientRect();
-        clone.classList.add('to-modal');
+
         clone.style.top = lastRect.top + 'px';
         clone.style.left = lastRect.left + 'px';
-        clone.style.width = lastRect.width + 'px';
-        clone.style.height = lastRect.height + 'px';
+        clone.style.width = modalWidth + 'px';
+        clone.style.height = targetHeight + 'px';
+        clone.style.borderRadius = '16px 16px 0 0';
 
         const cleanup = () => {
           // Reveal the modal and remove the clone
@@ -1759,15 +1773,20 @@ const App = (() => {
       const visibleImg = modalImgContainer.querySelector('.cluster-slide img, :scope > img');
       const modalRect = modalImgContainer.getBoundingClientRect();
       const cardRect = thumbImg.getBoundingClientRect();
+      const cardParent = sourceCard;
+      const cardRadius = cardParent ? (getComputedStyle(cardParent).borderRadius || '16px') : '16px';
 
       // Create clone at the modal's exact position (on top of the real image)
-      const clone = document.createElement('img');
-      clone.className = 'modal-transition-clone to-modal';
-      clone.src = (visibleImg && visibleImg.src) || 'img/placeholder.svg';
+      const clone = document.createElement('div');
+      clone.className = 'modal-transition-clone';
+      const cloneImg = document.createElement('img');
+      cloneImg.src = (visibleImg && visibleImg.src) || 'img/placeholder.svg';
+      clone.appendChild(cloneImg);
       clone.style.top = modalRect.top + 'px';
       clone.style.left = modalRect.left + 'px';
       clone.style.width = modalRect.width + 'px';
       clone.style.height = modalRect.height + 'px';
+      clone.style.borderRadius = '16px 16px 0 0';
       document.body.appendChild(clone);
 
       // NOW hide the modal (clone is covering the image so it's seamless)
@@ -1777,12 +1796,11 @@ const App = (() => {
 
       // Animate clone from modal position → card position
       requestAnimationFrame(() => {
-        clone.classList.remove('to-modal');
         clone.style.top = cardRect.top + 'px';
         clone.style.left = cardRect.left + 'px';
         clone.style.width = cardRect.width + 'px';
         clone.style.height = cardRect.height + 'px';
-        clone.style.borderRadius = '16px';
+        clone.style.borderRadius = cardRadius;
       });
 
       // Clean up after animation completes

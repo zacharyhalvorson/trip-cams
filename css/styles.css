@@ -1151,21 +1151,20 @@ button {
 .modal-transition-clone {
   position: fixed;
   z-index: 2001;
-  border-radius: 16px;
   overflow: hidden;
-  object-fit: cover;
-  will-change: transform, width, height, top, left, border-radius;
-  transition: all var(--duration-slow) var(--spring);
+  will-change: width, height, top, left, border-radius;
+  transition: width var(--duration-slow) var(--spring),
+              height var(--duration-slow) var(--spring),
+              top var(--duration-slow) var(--spring),
+              left var(--duration-slow) var(--spring),
+              border-radius var(--duration-slow) var(--spring);
   box-shadow: var(--shadow-lg);
   pointer-events: none;
 }
 
-.modal-transition-clone.to-modal {
-  border-radius: 16px 16px 0 0;
-}
-
-.modal-transition-clone.to-card {
-  /* border-radius animates back to card shape */
+.modal-transition-clone img {
+  width: 100%;
+  display: block;
 }
 
 .modal-header {
@@ -1507,7 +1506,6 @@ button {
   width: 100%;
   min-width: 0;
   position: relative;
-  aspect-ratio: 16 / 9;
 }
 
 .cluster-slide img {
