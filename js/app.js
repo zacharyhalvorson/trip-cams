@@ -16,6 +16,7 @@ const App = (() => {
   let dropdownTarget = null; // 'from' or 'to'
   let currentModalCamera = null;
   let sheetRevealed = false; // true once the sheet has been revealed (one-way)
+  let sheetRevealedAt = 0;   // timestamp when sheet was last revealed (for grace period)
   let _mapInitiatedScroll = false; // true when map viewport change is scrolling the list
   let _userHasInteractedWithMap = false; // true after first user pan/zoom on the map
   let _focusedCameraId = null; // the camera card currently centered in the list
@@ -309,6 +310,7 @@ const App = (() => {
 
     // List scroll interactions (reveal + pull-to-refresh)
     initListScrollExpand();
+    initHandleDrag();
   }
 
   // ── Route Selection ──────────────────────────────────────────
@@ -1221,6 +1223,7 @@ const App = (() => {
   function revealSheet() {
     if (sheetRevealed || isWideLayout()) return;
     sheetRevealed = true;
+    sheetRevealedAt = Date.now();
     dom.mapContainer.style.height = '20vh';
     dom.sheet.classList.remove('peeking');
     dom.sheet.classList.add('revealed');
@@ -1421,9 +1424,11 @@ const App = (() => {
       }
 
       // Sheet is revealed — scrolling down past the top collapses it.
-      // deltaY > 0 = "content down" which maps to the physical gesture of
-      // pushing the sheet back down on both natural and traditional scrolling.
-      if (list.scrollTop <= 0 && e.deltaY > 0) {
+      // Grace period: after reveal, ignore collapse via wheel for 600ms.
+      // With macOS natural scrolling, deltaY > 0 = fingers UP = scroll UP,
+      // so a second scroll-up gesture right after reveal would otherwise
+      // immediately collapse the sheet.
+      if (list.scrollTop <= 0 && e.deltaY > 0 && Date.now() - sheetRevealedAt > 600) {
         if (wheelCooldown) { e.preventDefault(); return; }
         wheelAccum += e.deltaY;
         e.preventDefault();
@@ -1438,6 +1443,53 @@ const App = (() => {
         wheelAccum = 0;
       }
     }, { capture: true, passive: false });
+  }
+
+  // ── Handle drag (tap & drag to reveal/collapse) ─────────────
+
+  function initHandleDrag() {
+    const handle = dom.sheetHandle;
+    const sheet = dom.sheet;
+    let startY = 0;
+    let dragging = false;
+    const DRAG_THRESHOLD = 30;
+
+    function onStart(e) {
+      if (isWideLayout()) return;
+      dragging = true;
+      startY = (e.touches ? e.touches[0] : e).clientY;
+      sheet.style.transition = 'none';
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      const y = (e.touches ? e.touches[0] : e).clientY;
+      const delta = y - startY; // positive = finger/mouse moving down
+
+      if (sheetRevealed && delta > DRAG_THRESHOLD) {
+        dragging = false;
+        sheet.style.transition = '';
+        collapseSheet();
+      } else if (!sheetRevealed && delta < -DRAG_THRESHOLD) {
+        dragging = false;
+        sheet.style.transition = '';
+        revealSheet();
+      }
+    }
+
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      sheet.style.transition = '';
+    }
+
+    handle.addEventListener('touchstart', onStart, { passive: false });
+    handle.addEventListener('mousedown', onStart);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('mouseup', onEnd);
   }
 
   // ── Modal ────────────────────────────────────────────────────
