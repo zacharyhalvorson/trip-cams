@@ -167,9 +167,7 @@ const App = (() => {
           card.scrollIntoView({ behavior: 'smooth', block: 'center' });
           card.classList.add('highlighted');
           setTimeout(() => card.classList.remove('highlighted'), 2000);
-          // Focus this camera's marker on the map
           _topCameraId = card.dataset.id;
-          TripMap.focusMarker(card.dataset.id);
           // Clear flag after scroll settles
           setTimeout(() => { _mapInitiatedScroll = false; }, 800);
           break;
@@ -680,13 +678,11 @@ const App = (() => {
       card.addEventListener('click', () => openModal(cam, null, card));
       card.addEventListener('mouseenter', () => {
         _hoveredCameraId = cam.id;
-        TripMap.focusMarker(cam.id);
         TripMap.hoverMarker(cam.id);
       });
       card.addEventListener('mouseleave', () => {
         _hoveredCameraId = null;
         TripMap.unhoverMarker();
-        if (_topCameraId) TripMap.focusMarker(_topCameraId);
       });
     } else {
       card.className = 'camera-card camera-card-disabled';
@@ -864,13 +860,11 @@ const App = (() => {
     // ── Hover / focus map sync ──
     card.addEventListener('mouseenter', () => {
       _hoveredCameraId = cams[currentPage].id;
-      TripMap.focusMarker(cams[currentPage].id);
       TripMap.hoverMarker(cams[currentPage].id);
     });
     card.addEventListener('mouseleave', () => {
       _hoveredCameraId = null;
       TripMap.unhoverMarker();
-      if (_topCameraId) TripMap.focusMarker(_topCameraId);
     });
 
     return card;
@@ -1115,10 +1109,6 @@ const App = (() => {
     if (camId === _topCameraId) return;
     _topCameraId = camId;
 
-    // Only set map focus if user isn't hovering a card
-    if (!_hoveredCameraId) {
-      TripMap.focusMarker(camId);
-    }
   }
 
   function updateFocusedCamera() {
@@ -1258,7 +1248,6 @@ const App = (() => {
           if (cam) {
             TripMap.panTo(cam.lat, cam.lon, 10);
             TripMap.highlightMarkerVisual(topCamId);
-            TripMap.focusMarker(topCamId);
           }
         } else {
           // Fallback: fit to all visible cameras

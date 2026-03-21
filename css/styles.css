@@ -485,80 +485,54 @@ button {
   right: 8px !important;
 }
 
-/* ---- Camera markers & clusters: transit-style nodes on the route ---- */
+/* ---- Camera markers & clusters: transit-style nodes on the route ----
+   Sizes are proportional to the route stroke width (5px visual weight).
+   Default  = 30% bigger  →  10px  (stroke + 30% padding)
+   In-view  = 50% bigger  →  12px  (.active)
+   Hovered  = 75% bigger  →  14px  (.map-hovered)
+   Uses width/height (not transform) because Leaflet uses transform for positioning.
+*/
 .camera-marker,
 .marker-cluster {
+  --sz: 10px;
   background: var(--green);
   border: 2px solid white;
   border-radius: 50%;
-  width: 12px !important;
-  height: 12px !important;
-  margin-left: -6px !important;
-  margin-top: -6px !important;
-  box-shadow: 0 0 0 1px var(--green-glow), 0 1px 3px rgba(0, 0, 0, 0.25);
+  width: var(--sz) !important;
+  height: var(--sz) !important;
+  margin-left: calc(var(--sz) / -2) !important;
+  margin-top: calc(var(--sz) / -2) !important;
+  box-shadow: 0 0 0 1px var(--green-glow), 0 1px 2px rgba(0, 0, 0, 0.2);
   opacity: 0.85;
-}
-
-.camera-marker {
   transition: width var(--duration) var(--spring-bounce),
               height var(--duration) var(--spring-bounce),
               margin var(--duration) var(--spring-bounce),
               opacity var(--duration-fast) var(--spring-bounce),
-              transform var(--duration-fast) var(--spring-bounce),
-              box-shadow var(--duration) var(--spring-bounce),
-              border-width var(--duration) var(--spring-bounce);
+              box-shadow var(--duration) var(--spring-bounce);
 }
 
-.camera-marker:hover {
-  opacity: 1;
-  transform: scale(1.15);
-}
-
-/* Visible in the camera list */
-.camera-marker.active {
+/* In-view — camera visible in the list */
+.camera-marker.active,
+.marker-cluster.active {
+  --sz: 12px;
   opacity: 1;
   z-index: 10000 !important;
 }
 
-/* Hovered from the list */
-.camera-marker.map-hovered {
-  opacity: 1;
-  transform: scale(1.15);
-  z-index: 10002 !important;
-}
-
-/* Focused — top of scroll list (larger node with glow).
-   Combined selector ensures it overrides .sheet-expanded .camera-marker too. */
-.camera-marker.map-focused,
-.sheet-expanded .camera-marker.map-focused {
-  width: 18px !important;
-  height: 18px !important;
-  margin-left: -9px !important;
-  margin-top: -9px !important;
-  border: 2.5px solid white;
-  opacity: 1;
-  z-index: 10001 !important;
-  box-shadow: 0 0 0 4px var(--green-glow), 0 2px 6px rgba(0, 0, 0, 0.25);
-}
-
-/* ---- Sheet expanded overrides ---- */
-.sheet-expanded .camera-marker,
-.sheet-expanded .marker-cluster {
-  width: 8px !important;
-  height: 8px !important;
-  margin-left: -4px !important;
-  margin-top: -4px !important;
-  opacity: 0.45;
-  border-width: 1.5px;
-}
-
-.sheet-expanded .camera-marker.active {
-  opacity: 0.8;
-}
-
-.sheet-expanded .camera-marker.map-hovered {
+/* Hovered from the list card */
+.camera-marker.map-hovered,
+.marker-cluster.map-hovered {
+  --sz: 14px;
   opacity: 1;
   z-index: 10002 !important;
+  box-shadow: 0 0 0 3px var(--green-glow), 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Mouse hover directly on map node */
+.camera-marker:hover,
+.marker-cluster:hover {
+  --sz: 14px;
+  opacity: 1;
 }
 
 .popup-content {

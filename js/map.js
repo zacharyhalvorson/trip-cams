@@ -65,7 +65,7 @@ const TripMap = (() => {
         return L.divIcon({
           html: '',
           className: 'marker-cluster',
-          iconSize: L.point(8, 8),
+          iconSize: L.point(10, 10),
         });
       },
     });
@@ -307,7 +307,7 @@ const TripMap = (() => {
   let _cameraIcon = null;
   function getCameraIcon() {
     if (!_cameraIcon) {
-      _cameraIcon = L.divIcon({ className: 'camera-marker', iconSize: [12, 12] });
+      _cameraIcon = L.divIcon({ className: 'camera-marker', iconSize: [10, 10] });
     }
     return _cameraIcon;
   }
@@ -316,7 +316,7 @@ const TripMap = (() => {
     markerCluster.clearLayers();
     markers.clear();
     activeMarkerId = null;
-    focusedMarkerId = null;
+    hoveredMarkerId = null;
 
     for (const cam of cameras) {
       if (cam.status === 'inactive') continue;
@@ -350,12 +350,10 @@ const TripMap = (() => {
 
   function highlightMarker(camId) {
     // Remove previous highlight
-    if (activeMarkerId && markers.has(activeMarkerId)) {
-      const prev = markers.get(activeMarkerId);
-      const prevEl = prev.getElement?.();
+    if (activeMarkerId) {
+      const prevEl = _getVisibleEl(activeMarkerId);
       if (prevEl) prevEl.classList.remove('active');
     }
-
     activeMarkerId = camId;
     if (!markers.has(camId)) return;
 
@@ -363,82 +361,54 @@ const TripMap = (() => {
     // Ensure the marker is visible (uncluster if needed)
     _markProgrammatic();
     markerCluster.zoomToShowLayer(marker, () => {
-      const el = marker.getElement?.();
+      const el = _getVisibleEl(camId);
       if (el) el.classList.add('active');
     });
   }
 
   let activeVisibleIds = new Set();
-  let focusedMarkerId = null;
-
-  // Highlight a single marker as "focused" — the camera at the top of the
-  // scroll list or the one the user is hovering over. Visually distinct from
-  // the regular "active" state that all visible markers share.
-  function focusMarker(camId) {
-    if (camId === focusedMarkerId) return;
-    // Remove previous focus
-    if (focusedMarkerId && markers.has(focusedMarkerId)) {
-      const el = markers.get(focusedMarkerId).getElement?.();
-      if (el) el.classList.remove('map-focused');
-    }
-    focusedMarkerId = camId;
-    if (!camId || !markers.has(camId)) return;
-    const el = markers.get(camId).getElement?.();
-    if (el) el.classList.add('map-focused');
-  }
-
-  function unfocusMarker() {
-    if (focusedMarkerId && markers.has(focusedMarkerId)) {
-      const el = markers.get(focusedMarkerId).getElement?.();
-      if (el) el.classList.remove('map-focused');
-    }
-    focusedMarkerId = null;
-  }
-
   let hoveredMarkerId = null;
+
+  // Get the visible DOM element for a marker — if the marker is inside a
+  // cluster, return the cluster's icon element instead.
+  function _getVisibleEl(camId) {
+    if (!markers.has(camId)) return null;
+    const marker = markers.get(camId);
+    const parent = markerCluster.getVisibleParent(marker);
+    if (!parent) return null;
+    return parent.getElement?.() ?? null;
+  }
 
   function hoverMarker(camId) {
     if (camId === hoveredMarkerId) return;
     unhoverMarker();
     hoveredMarkerId = camId;
-    if (!camId || !markers.has(camId)) return;
-    const el = markers.get(camId).getElement?.();
+    const el = _getVisibleEl(camId);
     if (el) el.classList.add('map-hovered');
   }
 
   function unhoverMarker() {
-    if (hoveredMarkerId && markers.has(hoveredMarkerId)) {
-      const el = markers.get(hoveredMarkerId).getElement?.();
+    if (hoveredMarkerId) {
+      const el = _getVisibleEl(hoveredMarkerId);
       if (el) el.classList.remove('map-hovered');
     }
     hoveredMarkerId = null;
   }
 
   function highlightVisible(visibleIds) {
-    // Remove old highlights
+    // Remove old highlights from markers and their parent clusters
     for (const id of activeVisibleIds) {
-      if (!visibleIds.has(id) && markers.has(id)) {
-        const el = markers.get(id).getElement?.();
+      if (!visibleIds.has(id)) {
+        const el = _getVisibleEl(id);
         if (el) el.classList.remove('active');
       }
     }
-    // Add new highlights
+    // Add new highlights — applies to cluster icon if marker is clustered
     for (const id of visibleIds) {
-      if (markers.has(id)) {
-        const el = markers.get(id).getElement?.();
-        if (el) el.classList.add('active');
-      }
+      const el = _getVisibleEl(id);
+      if (el) el.classList.add('active');
     }
     activeVisibleIds = new Set(visibleIds);
-
-    // Re-apply focused marker class — the element may have just become
-    // available after being unclustered by the zoom-to-visible logic.
-    if (focusedMarkerId && markers.has(focusedMarkerId)) {
-      const el = markers.get(focusedMarkerId).getElement?.();
-      if (el && !el.classList.contains('map-focused')) {
-        el.classList.add('map-focused');
-      }
-    }
   }
 
   // Fit map to show the visible cameras with enough context
@@ -490,15 +460,12 @@ const TripMap = (() => {
   // Highlight a marker visually (CSS class only) without calling
   // zoomToShowLayer, which would change zoom during scroll tracking.
   function highlightMarkerVisual(camId) {
-    if (activeMarkerId && markers.has(activeMarkerId)) {
-      const prev = markers.get(activeMarkerId);
-      const prevEl = prev.getElement?.();
+    if (activeMarkerId) {
+      const prevEl = _getVisibleEl(activeMarkerId);
       if (prevEl) prevEl.classList.remove('active');
     }
     activeMarkerId = camId;
-    if (!markers.has(camId)) return;
-    const marker = markers.get(camId);
-    const el = marker.getElement?.();
+    const el = _getVisibleEl(camId);
     if (el) el.classList.add('active');
   }
 
@@ -589,8 +556,6 @@ const TripMap = (() => {
     highlightMarker,
     highlightMarkerVisual,
     highlightVisible,
-    focusMarker,
-    unfocusMarker,
     hoverMarker,
     unhoverMarker,
     fitToVisible,
