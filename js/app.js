@@ -1056,8 +1056,8 @@ const App = (() => {
     cards.forEach(card => scrollTrackingObserver.observe(card));
 
     // Focused camera tracking: find the card closest to center and sync map.
-    // On very first scroll, instantly zoom to fit visible cameras (no animation
-    // to avoid Safari's CSS-transform scaling). After that, only ever pan.
+    // On very first scroll, smoothly fly to fit visible cameras.
+    // After that, only ever pan.
     let focusDebounce = null;
     _scrollTrackingHandler = () => {
       if (_mapInitiatedScroll) return;
@@ -1075,7 +1075,7 @@ const App = (() => {
           }
         }
         if (visIds.size > 0) {
-          TripMap.zoomToVisible(visIds);
+          TripMap.fitToVisible(visIds);
         }
       }
 
