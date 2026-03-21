@@ -637,14 +637,17 @@ const App = (() => {
     }
   }
 
+  function _isCustomRoute() {
+    return (fromStop?.source && fromStop.source !== 'predefined') ||
+           (toStop?.source && toStop.source !== 'predefined');
+  }
+
   function updateRoute() {
     if (!fromStop || !toStop) return;
 
-    // Determine waypoints: use predefined route or direct origin→destination
-    const isCustomRoute = (fromStop.source && fromStop.source !== 'predefined') ||
-                          (toStop.source && toStop.source !== 'predefined');
+    const customRoute = _isCustomRoute();
 
-    if (isCustomRoute || !routeData) {
+    if (customRoute || !routeData) {
       // Custom locations: just use origin + destination, OSRM provides the path
       currentWaypoints = [fromStop, toStop];
     } else {
@@ -668,8 +671,9 @@ const App = (() => {
         _lastFilteredIds = '';
         applyFilters();
 
-        // For custom routes, re-detect regions from geometry and reload cameras
-        if (isCustomRoute) {
+        // For custom routes, detect regions from actual road geometry and load cameras
+        // This is the primary camera load for custom routes (not loadCameras)
+        if (customRoute) {
           loadCamerasForGeometry();
         }
       })
@@ -679,24 +683,39 @@ const App = (() => {
       });
   }
 
-  // After OSRM geometry arrives for a custom route, detect regions and fetch cameras
+  // After OSRM geometry arrives for a custom route, detect regions and fetch cameras.
+  // This is the primary camera loading path for custom routes — cameras are filtered
+  // against the actual OSRM road geometry with a tight 2km buffer.
   async function loadCamerasForGeometry() {
     if (!currentRouteGeometry || currentRouteGeometry.length === 0) return;
     const neededRegions = await API.getRegionsForRoute(currentRouteGeometry);
-    if (neededRegions.size === 0) return;
+    if (neededRegions.size === 0) {
+      dom.skeletonList.classList.add('hidden');
+      return;
+    }
 
-    // Merge with existing cameras and re-fetch
+    // Force re-render since we have new geometry
+    _lastFilteredIds = '';
+
+    // Fetch cameras for detected regions
     const freshCameras = [];
     await API.fetchProgressive((region, result) => {
       freshCameras.push(...(result.data || []));
       allCameras = freshCameras.slice();
+      _lastFilteredIds = ''; // Force re-filter with each new batch
       applyFilters();
     }, neededRegions);
 
     if (freshCameras.length > 0) {
       allCameras = freshCameras;
+      _lastFilteredIds = '';
       applyFilters();
     }
+
+    dom.skeletonList.classList.add('hidden');
+
+    // Auto-open camera from URL hash
+    requestAnimationFrame(() => _openCameraFromHash());
   }
 
   // ── Snap to Current Location ─────────────────────────────────
@@ -790,6 +809,18 @@ const App = (() => {
   // ── Camera Loading ───────────────────────────────────────────
 
   async function loadCameras() {
+    // For custom routes, don't load cameras here — wait for OSRM geometry
+    // which triggers loadCamerasForGeometry() with precise corridor filtering.
+    // With only 2 waypoints (origin + destination), the straight-line buffer
+    // catches too many off-route cameras.
+    if (_isCustomRoute()) {
+      // Show skeleton while waiting for OSRM → loadCamerasForGeometry
+      dom.skeletonList.classList.remove('hidden');
+      removeCameraCards();
+      allCameras = [];
+      return;
+    }
+
     // Determine which regions the route passes through
     const neededRegions = new Set();
     if (currentWaypoints.length > 0) {
