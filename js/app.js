@@ -1613,12 +1613,20 @@ const App = (() => {
         clone.style.height = targetHeight + 'px';
         clone.style.borderRadius = '16px 16px 0 0';
 
+        let cleaned = false;
         const cleanup = () => {
-          // Reveal the modal and remove the clone
+          if (cleaned) return;
+          cleaned = true;
+          // Reveal the modal underneath first, then cross-fade the clone out
           dom.modal.style.transition = '';
           dom.modal.style.opacity = '';
           dom.modal.style.transform = '';
-          if (_flipClone) { _flipClone.remove(); _flipClone = null; }
+          if (_flipClone) {
+            // Brief cross-fade so the clone-to-modal handoff isn't a hard cut
+            _flipClone.style.transition = 'opacity 0.15s ease';
+            _flipClone.style.opacity = '0';
+            setTimeout(() => { if (_flipClone) { _flipClone.remove(); _flipClone = null; } }, 150);
+          }
         };
         clone.addEventListener('transitionend', function onEnd(e) {
           if (e.propertyName !== 'top' && e.propertyName !== 'width') return;
