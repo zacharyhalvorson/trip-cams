@@ -1590,10 +1590,11 @@ const App = (() => {
       );
       _flipClone = clone;
 
-      // Force layout so the modal is at its final position for measurement
-      void dom.modal.offsetHeight;
+      // Force overlay + modal layout so flex centering is resolved (Safari needs this)
+      void dom.modalOverlay.offsetHeight;
 
-      requestAnimationFrame(() => {
+      // Double-rAF ensures Safari has fully resolved the flex layout before measuring
+      requestAnimationFrame(() => { requestAnimationFrame(() => {
         const modalImgContainer = dom.modal.querySelector('.modal-image-container');
         const modalImg = modalImgContainer.querySelector('.cluster-slide img, :scope > img');
         const lastRect = modalImgContainer.getBoundingClientRect();
@@ -1635,7 +1636,7 @@ const App = (() => {
           cleanup();
         }, { once: false });
         setTimeout(cleanup, 600);
-      });
+      }); });
     } else {
       dom.modalOverlay.classList.add('active');
       document.body.style.overflow = 'hidden';
