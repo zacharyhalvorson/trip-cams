@@ -658,9 +658,6 @@ const App = (() => {
           <div class="thumb-overlay">
             ${regionBadge}
             <div class="camera-name">${cam.name}</div>
-            <div class="camera-status">
-              <span class="status-dot"></span>
-            </div>
           </div>
         </div>
       `;
@@ -717,9 +714,6 @@ const App = (() => {
           <div class="thumb-overlay">
             ${i === 0 ? regionBadge : (showRegion ? `<span class="thumb-region ${cam.region}">${cam.region}</span>` : '')}
             <div class="camera-name">${cam.name}${showDir ? ` <span class="cluster-direction">${dir}</span>` : ''}</div>
-            <div class="camera-status">
-              <span class="status-dot"></span>
-            </div>
           </div>
         </div>
       `;
