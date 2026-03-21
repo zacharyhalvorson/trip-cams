@@ -637,7 +637,22 @@ const App = (() => {
     cards.forEach(c => c.remove());
   }
 
-  function buildCameraCard(cam, index, showRegion) {
+  function formatTimeSince(dateStr, nowMs) {
+    if (!dateStr) return '';
+    const ts = new Date(dateStr).getTime();
+    if (Number.isNaN(ts)) return '';
+    const diffMs = nowMs - ts;
+    if (diffMs < 0) return '';
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return mins === 1 ? '1 minute ago' : `${mins} minutes ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+    const days = Math.floor(hours / 24);
+    return days === 1 ? '1 day ago' : `${days} days ago`;
+  }
+
+  function buildCameraCard(cam, index, showRegion, nowMs) {
     const card = document.createElement('div');
     card.dataset.id = cam.id;
     card.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
@@ -658,6 +673,7 @@ const App = (() => {
           <div class="thumb-overlay">
             ${regionBadge}
             <div class="camera-name">${cam.name}</div>
+            ${cam.lastUpdated ? `<span class="thumb-updated">${formatTimeSince(cam.lastUpdated, nowMs)}</span>` : ''}
           </div>
         </div>
       `;
@@ -686,7 +702,7 @@ const App = (() => {
   }
 
   // Build a paginated cluster card with scroll-snap slides for each camera
-  function buildClusterCard(cluster, index, showRegion) {
+  function buildClusterCard(cluster, index, showRegion, nowMs) {
     const cams = cluster.cameras;
     const firstCam = cams[0];
     const card = document.createElement('div');
@@ -714,6 +730,7 @@ const App = (() => {
           <div class="thumb-overlay">
             ${i === 0 ? regionBadge : (showRegion ? `<span class="thumb-region ${cam.region}">${cam.region}</span>` : '')}
             <div class="camera-name">${cam.name}${showDir ? ` <span class="cluster-direction">${dir}</span>` : ''}</div>
+            ${cam.lastUpdated ? `<span class="thumb-updated">${formatTimeSince(cam.lastUpdated, nowMs)}</span>` : ''}
           </div>
         </div>
       `;
@@ -890,13 +907,14 @@ const App = (() => {
     // Render first batch immediately for fast initial paint
     const firstBatch = clusters.slice(0, INITIAL_RENDER_BATCH);
     const restBatch = clusters.slice(INITIAL_RENDER_BATCH);
+    const nowMs = Date.now();
 
     const fragment = document.createDocumentFragment();
     firstBatch.forEach((cluster, i) => {
       if (cluster.cameras.length === 1) {
-        fragment.appendChild(buildCameraCard(cluster.cameras[0], i, showRegion));
+        fragment.appendChild(buildCameraCard(cluster.cameras[0], i, showRegion, nowMs));
       } else {
-        fragment.appendChild(buildClusterCard(cluster, i, showRegion));
+        fragment.appendChild(buildClusterCard(cluster, i, showRegion, nowMs));
       }
     });
     dom.cameraList.appendChild(fragment);
@@ -909,9 +927,9 @@ const App = (() => {
         restBatch.forEach((cluster, i) => {
           const idx = INITIAL_RENDER_BATCH + i;
           if (cluster.cameras.length === 1) {
-            restFragment.appendChild(buildCameraCard(cluster.cameras[0], idx, showRegion));
+            restFragment.appendChild(buildCameraCard(cluster.cameras[0], idx, showRegion, nowMs));
           } else {
-            restFragment.appendChild(buildClusterCard(cluster, idx, showRegion));
+            restFragment.appendChild(buildClusterCard(cluster, idx, showRegion, nowMs));
           }
         });
         dom.cameraList.appendChild(restFragment);
@@ -1507,6 +1525,21 @@ const App = (() => {
     return cardRect.bottom > listRect.top && cardRect.top < listRect.bottom;
   }
 
+  function _createFlipClone(imageSrc, rect, borderRadius) {
+    const clone = document.createElement('div');
+    clone.className = 'modal-transition-clone';
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    clone.appendChild(img);
+    clone.style.top = rect.top + 'px';
+    clone.style.left = rect.left + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.height = rect.height + 'px';
+    clone.style.borderRadius = borderRadius;
+    document.body.appendChild(clone);
+    return clone;
+  }
+
   function openModal(cam, cluster, sourceCard) {
     currentModalCamera = cam;
     _modalCluster = cluster && cluster.cameras.length > 1 ? cluster : null;
@@ -1527,6 +1560,7 @@ const App = (() => {
 
     if (canFlip) {
       const firstRect = thumbImg.getBoundingClientRect();
+      const cardRadius = getComputedStyle(sourceCard).borderRadius || '16px';
 
       // Keep modal invisible during the FLIP; suppress its own CSS transition
       dom.modal.style.transition = 'none';
@@ -1535,15 +1569,10 @@ const App = (() => {
       dom.modalOverlay.classList.add('active');
       document.body.style.overflow = 'hidden';
 
-      const clone = document.createElement('img');
-      clone.className = 'modal-transition-clone';
-      clone.src = thumbImg.src || thumbImg.dataset.src || 'img/placeholder.svg';
-      clone.style.top = firstRect.top + 'px';
-      clone.style.left = firstRect.left + 'px';
-      clone.style.width = firstRect.width + 'px';
-      clone.style.height = firstRect.height + 'px';
-      clone.style.borderRadius = '16px';
-      document.body.appendChild(clone);
+      const clone = _createFlipClone(
+        thumbImg.src || thumbImg.dataset.src || 'img/placeholder.svg',
+        firstRect, cardRadius
+      );
       _flipClone = clone;
 
       // Force layout so the modal is at its final position for measurement
@@ -1551,12 +1580,21 @@ const App = (() => {
 
       requestAnimationFrame(() => {
         const modalImgContainer = dom.modal.querySelector('.modal-image-container');
+        const modalImg = modalImgContainer.querySelector('.cluster-slide img, :scope > img');
         const lastRect = modalImgContainer.getBoundingClientRect();
-        clone.classList.add('to-modal');
+        // Use the modal image's natural dimensions to compute target height
+        let targetHeight;
+        if (modalImg && modalImg.naturalWidth && modalImg.naturalHeight) {
+          targetHeight = lastRect.width * (modalImg.naturalHeight / modalImg.naturalWidth);
+        } else {
+          targetHeight = lastRect.height;
+        }
+
         clone.style.top = lastRect.top + 'px';
         clone.style.left = lastRect.left + 'px';
         clone.style.width = lastRect.width + 'px';
-        clone.style.height = lastRect.height + 'px';
+        clone.style.height = targetHeight + 'px';
+        clone.style.borderRadius = '16px 16px 0 0';
 
         const cleanup = () => {
           // Reveal the modal and remove the clone
@@ -1741,16 +1779,12 @@ const App = (() => {
       const visibleImg = modalImgContainer.querySelector('.cluster-slide img, :scope > img');
       const modalRect = modalImgContainer.getBoundingClientRect();
       const cardRect = thumbImg.getBoundingClientRect();
+      const cardRadius = getComputedStyle(sourceCard).borderRadius || '16px';
 
-      // Create clone at the modal's exact position (on top of the real image)
-      const clone = document.createElement('img');
-      clone.className = 'modal-transition-clone to-modal';
-      clone.src = (visibleImg && visibleImg.src) || 'img/placeholder.svg';
-      clone.style.top = modalRect.top + 'px';
-      clone.style.left = modalRect.left + 'px';
-      clone.style.width = modalRect.width + 'px';
-      clone.style.height = modalRect.height + 'px';
-      document.body.appendChild(clone);
+      const clone = _createFlipClone(
+        (visibleImg && visibleImg.src) || 'img/placeholder.svg',
+        modalRect, '16px 16px 0 0'
+      );
 
       // NOW hide the modal (clone is covering the image so it's seamless)
       dom.modal.style.opacity = '0';
@@ -1759,12 +1793,11 @@ const App = (() => {
 
       // Animate clone from modal position → card position
       requestAnimationFrame(() => {
-        clone.classList.remove('to-modal');
         clone.style.top = cardRect.top + 'px';
         clone.style.left = cardRect.left + 'px';
         clone.style.width = cardRect.width + 'px';
         clone.style.height = cardRect.height + 'px';
-        clone.style.borderRadius = '16px';
+        clone.style.borderRadius = cardRadius;
       });
 
       // Clean up after animation completes
