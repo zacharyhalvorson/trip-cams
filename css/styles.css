@@ -716,9 +716,9 @@ button {
 .sheet-handle-bar {
   width: 48px;
   height: 4px;
-  background: var(--text-muted);
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 2px;
-  opacity: 0.5;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
 }
 
 /* =============================================================

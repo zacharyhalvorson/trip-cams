@@ -1301,19 +1301,22 @@ const App = (() => {
     // the sheet is offscreen (Safari responsive mode converts trackpad to touch).
     // List-level listeners handle pull-to-refresh once revealed.
 
+    let touchOnHandle = false;
+
     document.addEventListener('touchstart', (e) => {
       if (isWideLayout()) return;
+      touchOnHandle = dom.sheetHandle.contains(e.target);
       touchStartY = e.touches[0].clientY;
       touchStartScrollTop = list.scrollTop;
       triggered = false;
-      if (!isRefreshing && touchStartScrollTop <= 0) {
+      if (!touchOnHandle && !isRefreshing && touchStartScrollTop <= 0) {
         isPulling = true;
         ptr.classList.add('pulling');
       }
     }, { passive: true });
 
     document.addEventListener('touchmove', (e) => {
-      if (isWideLayout() || triggered) return;
+      if (isWideLayout() || triggered || touchOnHandle) return;
 
       const y = e.touches[0].clientY;
       const delta = y - touchStartY; // positive = finger moving down
@@ -1929,3 +1932,4 @@ const App = (() => {
 
   return { init };
 })();
+
