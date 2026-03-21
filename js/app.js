@@ -1580,6 +1580,7 @@ const App = (() => {
       dom.modal.style.transition = 'none';
       dom.modal.style.opacity = '0';
       dom.modal.style.transform = 'translateY(0)';
+      dom.modal.classList.add('flip-animating');
       dom.modalOverlay.classList.add('active');
       document.body.style.overflow = 'hidden';
 
@@ -1617,16 +1618,21 @@ const App = (() => {
         const cleanup = () => {
           if (cleaned) return;
           cleaned = true;
-          // Reveal the modal underneath first, then cross-fade the clone out
-          dom.modal.style.transition = '';
-          dom.modal.style.opacity = '';
-          dom.modal.style.transform = '';
-          if (_flipClone) {
-            // Brief cross-fade so the clone-to-modal handoff isn't a hard cut
-            _flipClone.style.transition = 'opacity 0.15s ease';
-            _flipClone.style.opacity = '0';
-            setTimeout(() => { if (_flipClone) { _flipClone.remove(); _flipClone = null; } }, 150);
-          }
+          // Snap modal to fully visible (no transition) so it's ready under the clone
+          dom.modal.style.transition = 'none';
+          dom.modal.style.opacity = '1';
+          dom.modal.style.transform = 'translateY(0)';
+          // Force layout so opacity:1 is painted before clone removal
+          void dom.modal.offsetHeight;
+          // Remove the clone — modal is already fully opaque underneath, no flash
+          if (_flipClone) { _flipClone.remove(); _flipClone = null; }
+          // Now restore default transition and fade in the header overlay
+          requestAnimationFrame(() => {
+            dom.modal.style.transition = '';
+            dom.modal.style.opacity = '';
+            dom.modal.style.transform = '';
+            dom.modal.classList.remove('flip-animating');
+          });
         };
         clone.addEventListener('transitionend', function onEnd(e) {
           if (e.propertyName !== 'top' && e.propertyName !== 'width') return;
