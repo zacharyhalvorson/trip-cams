@@ -8,6 +8,7 @@
   --green: #2DB84B;
   --green-hover: #26a342;
   --green-subtle: rgba(45, 184, 75, 0.1);
+  --green-glow: rgba(45, 184, 75, 0.25);
   --navy: #f8fafc;
   --navy-light: #f1f5f9;
   --navy-card: #ffffff;
@@ -484,25 +485,33 @@ button {
   right: 8px !important;
 }
 
-/* ---- Camera markers: two states — small (default) and large (focused) ---- */
-.camera-marker {
+/* ---- Camera markers & clusters: transit-style nodes on the route ---- */
+.camera-marker,
+.marker-cluster {
   background: var(--green);
-  border: 1.5px solid white;
+  border: 2px solid white;
   border-radius: 50%;
-  width: 8px !important;
-  height: 8px !important;
-  margin-left: -4px !important;
-  margin-top: -4px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: opacity var(--duration-fast) var(--spring-bounce),
+  width: 12px !important;
+  height: 12px !important;
+  margin-left: -6px !important;
+  margin-top: -6px !important;
+  box-shadow: 0 0 0 1px var(--green-glow), 0 1px 3px rgba(0, 0, 0, 0.25);
+  opacity: 0.85;
+}
+
+.camera-marker {
+  transition: width var(--duration) var(--spring-bounce),
+              height var(--duration) var(--spring-bounce),
+              margin var(--duration) var(--spring-bounce),
+              opacity var(--duration-fast) var(--spring-bounce),
               transform var(--duration-fast) var(--spring-bounce),
-              box-shadow var(--duration-fast) var(--spring-bounce);
-  opacity: 0.7;
+              box-shadow var(--duration) var(--spring-bounce),
+              border-width var(--duration) var(--spring-bounce);
 }
 
 .camera-marker:hover {
   opacity: 1;
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 
 /* Visible in the camera list */
@@ -514,63 +523,42 @@ button {
 /* Hovered from the list */
 .camera-marker.map-hovered {
   opacity: 1;
-  transform: scale(1.2);
+  transform: scale(1.15);
   z-index: 10002 !important;
 }
 
-/* Focused — top of scroll list (bigger green dot).
+/* Focused — top of scroll list (larger node with glow).
    Combined selector ensures it overrides .sheet-expanded .camera-marker too. */
 .camera-marker.map-focused,
 .sheet-expanded .camera-marker.map-focused {
-  width: 14px !important;
-  height: 14px !important;
-  margin-left: -7px !important;
-  margin-top: -7px !important;
-  border: 2px solid white;
+  width: 18px !important;
+  height: 18px !important;
+  margin-left: -9px !important;
+  margin-top: -9px !important;
+  border: 2.5px solid white;
   opacity: 1;
   z-index: 10001 !important;
-  box-shadow: 0 0 0 3px rgba(45, 184, 75, 0.2), 0 1px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 4px var(--green-glow), 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* ---- Sheet expanded overrides ---- */
-.sheet-expanded .camera-marker {
-  width: 6px !important;
-  height: 6px !important;
-  margin-left: -3px !important;
-  margin-top: -3px !important;
-  opacity: 0.35;
-  border-width: 1px;
+.sheet-expanded .camera-marker,
+.sheet-expanded .marker-cluster {
+  width: 8px !important;
+  height: 8px !important;
+  margin-left: -4px !important;
+  margin-top: -4px !important;
+  opacity: 0.45;
+  border-width: 1.5px;
 }
 
 .sheet-expanded .camera-marker.active {
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .sheet-expanded .camera-marker.map-hovered {
   opacity: 1;
   z-index: 10002 !important;
-}
-
-/* ---- Cluster: single green dot, no expansion ---- */
-.marker-cluster {
-  width: 8px !important;
-  height: 8px !important;
-  margin-left: -4px !important;
-  margin-top: -4px !important;
-  background: var(--green) !important;
-  border: 1.5px solid white !important;
-  border-radius: 50% !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
-  opacity: 0.7;
-}
-
-.sheet-expanded .marker-cluster {
-  width: 6px !important;
-  height: 6px !important;
-  margin-left: -3px !important;
-  margin-top: -3px !important;
-  opacity: 0.35;
-  border-width: 1px !important;
 }
 
 .popup-content {

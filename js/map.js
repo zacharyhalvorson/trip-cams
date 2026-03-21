@@ -307,7 +307,7 @@ const TripMap = (() => {
   let _cameraIcon = null;
   function getCameraIcon() {
     if (!_cameraIcon) {
-      _cameraIcon = L.divIcon({ className: 'camera-marker', iconSize: [8, 8] });
+      _cameraIcon = L.divIcon({ className: 'camera-marker', iconSize: [12, 12] });
     }
     return _cameraIcon;
   }
