@@ -213,21 +213,73 @@ const TripMap = (() => {
     trafficLines = [];
   }
 
+  // Linearly interpolate between two hex colors. t is 0–1.
+  function lerpColor(a, b, t) {
+    const parse = (hex) => [
+      parseInt(hex.slice(1, 3), 16),
+      parseInt(hex.slice(3, 5), 16),
+      parseInt(hex.slice(5, 7), 16),
+    ];
+    const ca = parse(a), cb = parse(b);
+    const r = Math.round(ca[0] + (cb[0] - ca[0]) * t);
+    const g = Math.round(ca[1] + (cb[1] - ca[1]) * t);
+    const bl = Math.round(ca[2] + (cb[2] - ca[2]) * t);
+    return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
+  }
+
   function applyTrafficColoring(latlngs) {
     clearTrafficLines();
     const colors = getTrafficColors();
     const segments = generateTrafficSegments(latlngs);
+    const BLEND_STEPS = 4; // number of gradient sub-segments at each boundary
 
-    for (const seg of segments) {
+    for (let s = 0; s < segments.length; s++) {
+      const seg = segments[s];
       const color = colors[seg.condition];
+      const opacity = seg.condition === 'clear' ? 0.7 : 0.85;
+
       const line = L.polyline(seg.points, {
         color,
         weight: 5,
-        opacity: seg.condition === 'clear' ? 0.7 : 0.85,
+        opacity,
         lineCap: 'round',
         lineJoin: 'round',
       }).addTo(map);
       trafficLines.push(line);
+
+      // Add a gradient transition to the next segment if the color changes
+      const next = segments[s + 1];
+      if (next && next.condition !== seg.condition) {
+        const fromColor = colors[seg.condition];
+        const toColor = colors[next.condition];
+        const fromOpacity = opacity;
+        const toOpacity = next.condition === 'clear' ? 0.7 : 0.85;
+        // Use the last few points of this segment + first few of next
+        const tailCount = Math.min(3, seg.points.length);
+        const headCount = Math.min(3, next.points.length);
+        const blendPts = [
+          ...seg.points.slice(-tailCount),
+          ...next.points.slice(0, headCount),
+        ];
+        if (blendPts.length >= 2) {
+          for (let i = 0; i < BLEND_STEPS; i++) {
+            const t = i / BLEND_STEPS;
+            const tNext = (i + 1) / BLEND_STEPS;
+            const startIdx = Math.floor(t * (blendPts.length - 1));
+            const endIdx = Math.min(Math.floor(tNext * (blendPts.length - 1)) + 1, blendPts.length);
+            const slice = blendPts.slice(startIdx, endIdx + 1);
+            if (slice.length < 2) continue;
+            const blendLine = L.polyline(slice, {
+              color: lerpColor(fromColor, toColor, (t + tNext) / 2),
+              weight: 5,
+              opacity: fromOpacity + (toOpacity - fromOpacity) * ((t + tNext) / 2),
+              lineCap: 'round',
+              lineJoin: 'round',
+            }).addTo(map);
+            trafficLines.push(blendLine);
+          }
+        }
+      }
     }
   }
 
