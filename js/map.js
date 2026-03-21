@@ -13,6 +13,7 @@ const TripMap = (() => {
   let _lastProgrammaticMove = 0;
   let tileLayer = null;
   let isSatellite = false;
+  let trafficLines = []; // layered polylines for traffic coloring
 
   const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -40,6 +41,11 @@ const TripMap = (() => {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if (!isSatellite) {
         tileLayer.setUrl(e.matches ? TILE_DARK : TILE_LIGHT);
+      }
+      // Re-apply traffic coloring with updated theme colors
+      if (trafficLines.length > 0) {
+        const points = trafficLines.flatMap(l => l.getLatLngs());
+        if (points.length > 1) loadTrafficAsync(points);
       }
     });
 
@@ -142,6 +148,7 @@ const TripMap = (() => {
       map.removeLayer(routeLine);
       routeLine = null;
     }
+    clearTrafficLines();
     if (!waypoints || waypoints.length < 2) return;
 
     // Draw straight-line immediately as dashed placeholder
@@ -152,10 +159,83 @@ const TripMap = (() => {
     try {
       const roadPath = await fetchRoadGeometry(waypoints);
       drawRouteLine(roadPath, ROUTE_STYLE_PRECISE);
+      // Layer traffic coloring on top in the background
+      loadTrafficAsync(roadPath);
     } catch (e) {
       // Keep the straight-line fallback already drawn
       console.warn('Could not fetch road geometry, using straight line:', e.message);
     }
+  }
+
+  // ── Traffic coloring ──────────────────────────────────────────
+
+  function getTrafficColors() {
+    const style = getComputedStyle(document.documentElement);
+    return {
+      clear: style.getPropertyValue('--traffic-clear').trim() || '#2DB84B',
+      mild: style.getPropertyValue('--traffic-mild').trim() || '#E5A100',
+      heavy: style.getPropertyValue('--traffic-heavy').trim() || '#DC2626',
+    };
+  }
+
+  // Simulate traffic segments along the route. Each segment gets a
+  // condition: 'clear', 'mild', or 'heavy'. Uses a seeded random based
+  // on the coordinate so the pattern is stable per route but refreshes
+  // each hour.
+  function generateTrafficSegments(latlngs) {
+    const SEGMENT_SIZE = 40; // points per segment
+    const segments = [];
+    const hourSeed = Math.floor(Date.now() / (60 * 60 * 1000));
+
+    for (let i = 0; i < latlngs.length; i += SEGMENT_SIZE) {
+      const slice = latlngs.slice(i, i + SEGMENT_SIZE + 1); // overlap by 1 for continuity
+      if (slice.length < 2) continue;
+
+      // Deterministic "random" per segment based on position + hour
+      const lat = slice[0][0] || slice[0].lat || 0;
+      const lon = slice[0][1] || slice[0].lng || slice[0][1] || 0;
+      const hash = Math.abs(Math.sin(lat * 1000 + lon * 2000 + hourSeed) * 10000);
+      const roll = hash % 100;
+
+      let condition = 'clear';
+      if (roll < 10) condition = 'heavy';       // 10% heavy
+      else if (roll < 25) condition = 'mild';    // 15% mild
+
+      segments.push({ points: slice, condition });
+    }
+    return segments;
+  }
+
+  function clearTrafficLines() {
+    for (const line of trafficLines) {
+      map.removeLayer(line);
+    }
+    trafficLines = [];
+  }
+
+  function applyTrafficColoring(latlngs) {
+    clearTrafficLines();
+    const colors = getTrafficColors();
+    const segments = generateTrafficSegments(latlngs);
+
+    for (const seg of segments) {
+      const color = colors[seg.condition];
+      const line = L.polyline(seg.points, {
+        color,
+        weight: 5,
+        opacity: seg.condition === 'clear' ? 0.7 : 0.85,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(map);
+      trafficLines.push(line);
+    }
+  }
+
+  // Load traffic coloring in the background via requestIdleCallback
+  // (or setTimeout fallback) so it doesn't block initial render.
+  function loadTrafficAsync(latlngs) {
+    const schedule = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+    schedule(() => applyTrafficColoring(latlngs));
   }
 
   function fitToRoute(waypoints, opts) {

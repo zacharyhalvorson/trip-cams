@@ -28,6 +28,11 @@
   --bc-color: #2563eb;
   --wa-color: #7c3aed;
 
+  /* Traffic colors */
+  --traffic-clear: #2DB84B;
+  --traffic-mild: #E5A100;
+  --traffic-heavy: #DC2626;
+
   /* Typography */
   --font: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', monospace;
@@ -66,6 +71,9 @@
     --ab-color: #f59e0b;
     --bc-color: #3b82f6;
     --wa-color: #8b5cf6;
+    --traffic-clear: #34D058;
+    --traffic-mild: #F5B800;
+    --traffic-heavy: #F85149;
   }
 }
 
