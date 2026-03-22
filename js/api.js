@@ -44,6 +44,7 @@ const API = (() => {
       urls: [
         'https://www.wsdot.wa.gov/Traffic/api/HighwayCameras/HighwayCamerasREST.svc/GetCamerasAsJson?AccessCode=75de6d3e-f4e0-4dc0-841f-11b95c1acc7e',
         'https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query?where=1%3D1&outFields=*&f=json',
+        'https://www.wsdot.wa.gov/arcgis/rest/services/Production/WSDOTTrafficCameras/MapServer/0/query?where=1%3D1&outFields=*&f=json',
       ],
       norm: 'normalizeWA', country: 'US'
     },
