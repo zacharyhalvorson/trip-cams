@@ -755,7 +755,7 @@ button {
 }
 
 .sheet.peeking {
-  top: calc(100dvh - 120px);
+  top: calc(100dvh - 180px);
 }
 
 .sheet.revealed {
