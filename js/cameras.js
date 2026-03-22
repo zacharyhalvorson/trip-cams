@@ -444,12 +444,17 @@ const Cameras = (() => {
     }
     const distCache = _corridorCache.distances;
 
+    let _dbgCount = 0;
     return cameras.filter(cam => {
       if (!isHighwayCamera(cam)) return false;
       let dist = distCache.get(cam.id);
       if (dist === undefined) {
         dist = pointToPolylineDistance(cam.lat, cam.lon, waypoints);
         distCache.set(cam.id, dist);
+      }
+      if (dist <= bufferKm && _dbgCount < 20) {
+        _dbgCount++;
+        console.log(`[corridor] ${cam.name} (${cam.lat.toFixed(4)},${cam.lon.toFixed(4)}) dist=${dist.toFixed(3)}km`);
       }
       return dist <= bufferKm;
     });
