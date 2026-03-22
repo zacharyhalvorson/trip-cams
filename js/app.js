@@ -1808,11 +1808,17 @@ const App = (() => {
     const sheet = dom.sheet;
     let startY = 0;
     let dragging = false;
+    let didDrag = false;
     const DRAG_THRESHOLD = 30;
+
+    // Double-tap detection
+    let lastTapTime = 0;
+    const DOUBLE_TAP_MS = 300;
 
     function onStart(e) {
       if (isWideLayout()) return;
       dragging = true;
+      didDrag = false;
       startY = (e.touches ? e.touches[0] : e).clientY;
       sheet.style.transition = 'none';
       e.preventDefault();
@@ -1825,10 +1831,12 @@ const App = (() => {
 
       if (sheetRevealed && delta > DRAG_THRESHOLD) {
         dragging = false;
+        didDrag = true;
         sheet.style.transition = '';
         collapseSheet();
       } else if (!sheetRevealed && delta < -DRAG_THRESHOLD) {
         dragging = false;
+        didDrag = true;
         sheet.style.transition = '';
         revealSheet();
       }
@@ -1836,8 +1844,22 @@ const App = (() => {
 
     function onEnd() {
       if (!dragging) return;
+      const wasDrag = didDrag;
       dragging = false;
+      didDrag = false;
       sheet.style.transition = '';
+
+      // Only count as a tap if there was no drag
+      if (!wasDrag) {
+        const now = Date.now();
+        if (now - lastTapTime < DOUBLE_TAP_MS) {
+          lastTapTime = 0;
+          if (!sheetRevealed) revealSheet();
+          snapToCurrentLocation();
+        } else {
+          lastTapTime = now;
+        }
+      }
     }
 
     handle.addEventListener('touchstart', onStart, { passive: false });
