@@ -280,9 +280,20 @@ const App = (() => {
             const city = await API.reverseGeocode(latitude, longitude);
             if (city) {
               userLocation.city = city;
-              // Auto-set origin on first load if no prefs/hash set it
+              // Auto-set origin and destination on first load if no prefs/hash set them
               if (fromStop && fromStop.source !== 'geocode' && fromStop.source !== 'geolocation' && !_prefsOrHashSetOrigin) {
                 fromStop = city;
+                // Set destination to closest major city that isn't the user's location
+                const majorCityIds = ['calgary', 'vancouver', 'seattle', 'kamloops', 'lethbridge', 'bellingham', 'kelowna'];
+                const majorStops = allStops.filter(s => majorCityIds.includes(s.id));
+                if (majorStops.length > 0) {
+                  // Sort by distance from user, pick closest that's >50km away
+                  const sorted = majorStops
+                    .map(s => ({ stop: s, dist: Cameras.haversine(latitude, longitude, s.lat, s.lon) }))
+                    .sort((a, b) => a.dist - b.dist);
+                  const best = sorted.find(s => s.dist > 50) || sorted[sorted.length - 1];
+                  toStop = best.stop;
+                }
                 updateRouteDisplay();
                 updateRoute();
                 loadCameras();
@@ -321,8 +332,9 @@ const App = (() => {
     if (fromStop) _prefsOrHashSetOrigin = true;
 
     // Set defaults if not from hash or prefs
-    if (!fromStop) fromStop = allStops.find(s => s.id === 'calgary') || allStops[0];
-    if (!toStop) toStop = allStops.find(s => s.id === 'seattle') || allStops[allStops.length - 1];
+    // Default origin: Vancouver, default destination: Calgary
+    if (!fromStop) fromStop = allStops.find(s => s.id === 'vancouver') || allStops[0];
+    if (!toStop) toStop = allStops.find(s => s.id === 'calgary') || allStops[allStops.length - 1];
 
     updateRouteDisplay();
     updateRoute();
