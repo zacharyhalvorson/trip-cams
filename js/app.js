@@ -902,10 +902,15 @@ const App = (() => {
     const buffer = useGeometry ? 1
       : (currentWaypoints.length > 2 ? (routeData?.corridorBuffer || 25) : 5);
 
+    console.log(`[filter] geo=${useGeometry} pts=${filterPath.length} buf=${buffer}km all=${allCameras.length} gen=${_routeGeneration}`);
+
     // Filter by corridor
     let cameras = filterPath.length > 0
       ? Cameras.filterByCorridor(allCameras, filterPath, buffer)
       : allCameras;
+
+    console.log(`[filter] result=${cameras.length} (from ${allCameras.length})`);
+    document.title = `[${useGeometry?'OSRM':'STRAIGHT'} ${buffer}km] ${cameras.length}/${allCameras.length} cams`;
 
     // Sort by route order
     if (filterPath.length > 0) {
