@@ -39,34 +39,34 @@ const Cameras = (() => {
     return haversine(pLat, pLon, projLat, projLon);
   }
 
-  // Minimum distance from a point to a polyline in km
-  // For dense polylines (OSRM geometry), uses bounding-box pre-filter to skip
-  // segments that are clearly too far away, avoiding expensive haversine calls.
+  // Minimum distance from a point to a polyline in km.
+  // For dense polylines (OSRM geometry), uses a generous bounding-box pre-filter
+  // to skip segments that are clearly far away (> ~220km). This is purely a
+  // performance optimization and must never affect the computed distance.
   function pointToPolylineDistance(lat, lon, waypoints) {
     let minDist = Infinity;
-    // Fixed generous bbox threshold (~50km) for segment pre-filtering.
-    // This is purely a performance optimization — must never affect the result.
-    const bufferDeg = 0.5; // ~55km at mid-latitudes
+    // 2 degrees ≈ 220km — generous enough to never cause false skips
     const useBbox = waypoints.length > 50;
-
     for (let i = 0; i < waypoints.length - 1; i++) {
-      const aLat = waypoints[i].lat, aLon = waypoints[i].lon;
-      const bLat = waypoints[i + 1].lat, bLon = waypoints[i + 1].lon;
-
-      // Bounding-box pre-filter: skip segments clearly outside buffer range
       if (useBbox) {
-        const minLat = Math.min(aLat, bLat) - bufferDeg;
-        const maxLat = Math.max(aLat, bLat) + bufferDeg;
-        const minLon = Math.min(aLon, bLon) - bufferDeg;
-        const maxLon = Math.max(aLon, bLon) + bufferDeg;
-        if (lat < minLat || lat > maxLat || lon < minLon || lon > maxLon) continue;
+        const aLat = waypoints[i].lat, aLon = waypoints[i].lon;
+        const bLat = waypoints[i + 1].lat, bLon = waypoints[i + 1].lon;
+        // Quick reject: if camera is > 2 degrees from segment bbox, skip
+        const sMinLat = aLat < bLat ? aLat : bLat;
+        const sMaxLat = aLat > bLat ? aLat : bLat;
+        const sMinLon = aLon < bLon ? aLon : bLon;
+        const sMaxLon = aLon > bLon ? aLon : bLon;
+        if (lat < sMinLat - 2 || lat > sMaxLat + 2 ||
+            lon < sMinLon - 2 || lon > sMaxLon + 2) continue;
       }
-
-      const d = pointToSegmentDistance(lat, lon, aLat, aLon, bLat, bLon);
+      const d = pointToSegmentDistance(
+        lat, lon,
+        waypoints[i].lat, waypoints[i].lon,
+        waypoints[i + 1].lat, waypoints[i + 1].lon
+      );
       if (d < minDist) {
         minDist = d;
-        // Early exit if we're essentially on the road
-        if (minDist < 0.1) return minDist;
+        if (minDist < 0.1) return minDist; // on the road
       }
     }
     return minDist;

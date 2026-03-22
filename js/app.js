@@ -907,6 +907,8 @@ const App = (() => {
       ? Cameras.filterByCorridor(allCameras, filterPath, buffer)
       : allCameras;
 
+    document.title = `${useGeometry?'G':'S'}${buffer} ${cameras.length}/${allCameras.length}`;
+
     // Sort by route order
     if (filterPath.length > 0) {
       cameras = Cameras.sortByRoute(cameras, filterPath);
