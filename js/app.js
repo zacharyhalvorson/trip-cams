@@ -215,9 +215,7 @@ const App = (() => {
       for (const card of cards) {
         if (visibleSet.has(card.dataset.id)) {
           _mapInitiatedScroll = true;
-          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          card.classList.add('highlighted');
-          setTimeout(() => card.classList.remove('highlighted'), 2000);
+          highlightCard(card);
           _topCameraId = card.dataset.id;
           // Clear flag after scroll settles
           setTimeout(() => { _mapInitiatedScroll = false; }, 800);
@@ -732,23 +730,25 @@ const App = (() => {
     requestAnimationFrame(() => _openCameraFromHash());
   }
 
+  // ── Highlight + scroll helper ───────────────────────────────
+
+  function highlightCard(card) {
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('highlighted');
+    setTimeout(() => card.classList.remove('highlighted'), 2000);
+  }
+
   // ── Snap to Current Location ─────────────────────────────────
 
   function snapToCurrentLocation() {
     const cards = dom.cameraList.querySelectorAll('.camera-card');
 
-    // If no location available, scroll to the beginning of the list
     if (!userLocation) {
-      const firstCard = cards[0];
-      if (firstCard) {
-        firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        firstCard.classList.add('highlighted');
-        setTimeout(() => firstCard.classList.remove('highlighted'), 2000);
-      }
+      highlightCard(cards[0]);
       return;
     }
 
-    // Find nearest camera in the current filtered list
     const { lat, lon } = userLocation;
     let nearestCard = null;
     let minDist = Infinity;
@@ -763,12 +763,8 @@ const App = (() => {
       }
     }
 
-    if (nearestCard) {
-      nearestCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nearestCard.classList.add('highlighted');
-      setTimeout(() => nearestCard.classList.remove('highlighted'), 2000);
-      TripMap.panTo(userLocation.lat, userLocation.lon);
-    }
+    highlightCard(nearestCard);
+    if (nearestCard) TripMap.panTo(userLocation.lat, userLocation.lon);
   }
 
   // ── URL Hash ─────────────────────────────────────────────────
@@ -1519,9 +1515,7 @@ const App = (() => {
       }
     }
     if (card) {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      card.classList.add('highlighted');
-      setTimeout(() => card.classList.remove('highlighted'), 2000);
+      highlightCard(card);
     }
 
     // Find cluster for modal navigation
@@ -1820,8 +1814,6 @@ const App = (() => {
     let dragging = false;
     let didDrag = false;
     const DRAG_THRESHOLD = 30;
-
-    // Double-tap detection
     let lastTapTime = 0;
     const DOUBLE_TAP_MS = 300;
 
@@ -1854,13 +1846,12 @@ const App = (() => {
 
     function onEnd() {
       if (!dragging) return;
-      const wasDrag = didDrag;
+      const tapped = !didDrag;
       dragging = false;
       didDrag = false;
       sheet.style.transition = '';
 
-      // Only count as a tap if there was no drag
-      if (!wasDrag) {
+      if (tapped) {
         const now = Date.now();
         if (now - lastTapTime < DOUBLE_TAP_MS) {
           lastTapTime = 0;
