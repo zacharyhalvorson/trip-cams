@@ -48,22 +48,12 @@ const Cameras = (() => {
     // 2 degrees ≈ 220km — generous enough to never cause false skips
     const useBbox = waypoints.length > 50;
     for (let i = 0; i < waypoints.length - 1; i++) {
-      if (useBbox) {
-        const aLat = waypoints[i].lat, aLon = waypoints[i].lon;
-        const bLat = waypoints[i + 1].lat, bLon = waypoints[i + 1].lon;
-        // Quick reject: if camera is > 2 degrees from segment bbox, skip
-        const sMinLat = aLat < bLat ? aLat : bLat;
-        const sMaxLat = aLat > bLat ? aLat : bLat;
-        const sMinLon = aLon < bLon ? aLon : bLon;
-        const sMaxLon = aLon > bLon ? aLon : bLon;
-        if (lat < sMinLat - 2 || lat > sMaxLat + 2 ||
-            lon < sMinLon - 2 || lon > sMaxLon + 2) continue;
-      }
-      const d = pointToSegmentDistance(
-        lat, lon,
-        waypoints[i].lat, waypoints[i].lon,
-        waypoints[i + 1].lat, waypoints[i + 1].lon
-      );
+      const aLat = waypoints[i].lat, aLon = waypoints[i].lon;
+      const bLat = waypoints[i + 1].lat, bLon = waypoints[i + 1].lon;
+      if (useBbox &&
+          (lat < (aLat < bLat ? aLat : bLat) - 2 || lat > (aLat > bLat ? aLat : bLat) + 2 ||
+           lon < (aLon < bLon ? aLon : bLon) - 2 || lon > (aLon > bLon ? aLon : bLon) + 2)) continue;
+      const d = pointToSegmentDistance(lat, lon, aLat, aLon, bLat, bLon);
       if (d < minDist) {
         minDist = d;
         if (minDist < 0.1) return minDist; // on the road
@@ -436,13 +426,18 @@ const Cameras = (() => {
     return waypoints.map(w => `${w.lat.toFixed(3)},${w.lon.toFixed(3)}`).join('|');
   }
 
-  // Filter cameras to those within the route corridor
+  // Filter cameras to those within the route corridor.
+  // Uses segment projection for precision, then verifies with direct haversine
+  // to sampled route points as a safety net against projection edge cases.
   function filterByCorridor(cameras, waypoints, bufferKm) {
     const wpKey = getCorridorCacheKey(waypoints);
     if (_corridorCache.waypointKey !== wpKey) {
       _corridorCache = { waypointKey: wpKey, distances: new Map() };
     }
     const distCache = _corridorCache.distances;
+
+    // Pre-sample route points for haversine verification
+    const verifySamples = _buildRouteSamples(waypoints, bufferKm);
 
     return cameras.filter(cam => {
       if (!isHighwayCamera(cam)) return false;
@@ -451,8 +446,28 @@ const Cameras = (() => {
         dist = pointToPolylineDistance(cam.lat, cam.lon, waypoints);
         distCache.set(cam.id, dist);
       }
-      return dist <= bufferKm;
+      if (dist > bufferKm) return false;
+      // Verify: camera must be within maxDist of a sampled route point
+      if (verifySamples) {
+        for (const s of verifySamples.pts) {
+          if (haversine(cam.lat, cam.lon, s.lat, s.lon) <= verifySamples.maxDist) return true;
+        }
+        return false;
+      }
+      return true;
     });
+  }
+
+  // Build sampled route points for haversine verification.
+  // Only used for dense geometry (> 50 waypoints) where segment projection
+  // edge cases are most likely.
+  function _buildRouteSamples(waypoints, bufferKm) {
+    if (waypoints.length <= 50) return null;
+    const step = Math.max(1, Math.floor(waypoints.length / 200));
+    const pts = [];
+    for (let i = 0; i < waypoints.length; i += step) pts.push(waypoints[i]);
+    pts.push(waypoints[waypoints.length - 1]);
+    return { pts, maxDist: bufferKm * 3 };
   }
 
   // Sort cameras by their position along the route

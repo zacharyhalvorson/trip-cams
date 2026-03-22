@@ -714,7 +714,7 @@ const App = (() => {
     await API.fetchProgressive((region, result) => {
       if (generation !== _routeGeneration) return; // Stale
       freshCameras.push(...(result.data || []));
-      allCameras = freshCameras.slice();
+      allCameras = freshCameras;
       _lastFilteredIds = ''; // Force re-filter with each new batch
       applyFilters();
     }, neededRegions);
@@ -868,7 +868,7 @@ const App = (() => {
       freshCameras.push(...(result.data || []));
       // Only re-render if we didn't have cached data, or if fresh data differs
       if (!hadCachedData) {
-        allCameras = freshCameras.slice();
+        allCameras = freshCameras;
         applyFilters();
       }
     }, neededRegions.size > 0 ? neededRegions : null);
@@ -906,30 +906,6 @@ const App = (() => {
     let cameras = filterPath.length > 0
       ? Cameras.filterByCorridor(allCameras, filterPath, buffer)
       : allCameras;
-
-    // Secondary distance check: verify each camera is actually within buffer
-    // of the route using direct haversine to sampled route points.
-    // This catches any bugs in the segment projection math.
-    if (useGeometry && cameras.length > 50) {
-      // Sample route geometry every Nth point for fast checking
-      const step = Math.max(1, Math.floor(filterPath.length / 200));
-      const samples = [];
-      for (let i = 0; i < filterPath.length; i += step) samples.push(filterPath[i]);
-      samples.push(filterPath[filterPath.length - 1]);
-
-      cameras = cameras.filter(cam => {
-        // Check if camera is within (buffer * 3)km of ANY sampled route point
-        // Using 3x buffer since samples skip intermediate points
-        const maxDist = buffer * 3;
-        for (const s of samples) {
-          const d = Cameras.haversine(cam.lat, cam.lon, s.lat, s.lon);
-          if (d <= maxDist) return true;
-        }
-        return false;
-      });
-    }
-
-    document.title = `${useGeometry?'G':'S'}${buffer} ${cameras.length}/${allCameras.length}`;
 
     // Sort by route order
     if (filterPath.length > 0) {
@@ -1635,23 +1611,7 @@ const App = (() => {
     }, 350);
   }
 
-  /** Reset UI to the overview/collapsed state (used when route changes). */
-  function resetToOverview() {
-    dom.cameraList.scrollTop = 0;
-    _hasZoomedForScroll = false;
-    if (!isWideLayout() && sheetRevealed) {
-      sheetRevealed = false;
-      dom.mapContainer.style.height = '';
-      dom.sheet.classList.remove('revealed');
-      dom.sheet.classList.add('peeking');
-      document.body.classList.remove('sheet-expanded');
-      dom.cameraList.style.overflowY = 'hidden';
-      TripMap.invalidateSize();
-    }
-  }
-
-  function collapseSheet() {
-    if (!sheetRevealed || isWideLayout()) return;
+  function _collapseSheetDOM() {
     sheetRevealed = false;
     dom.mapContainer.style.height = '';
     dom.sheet.classList.remove('revealed');
@@ -1660,6 +1620,18 @@ const App = (() => {
     dom.cameraList.style.overflowY = 'hidden';
     dom.cameraList.scrollTop = 0;
     TripMap.invalidateSize();
+  }
+
+  /** Reset UI to the overview/collapsed state (used when route changes). */
+  function resetToOverview() {
+    _hasZoomedForScroll = false;
+    if (!isWideLayout() && sheetRevealed) _collapseSheetDOM();
+    else dom.cameraList.scrollTop = 0;
+  }
+
+  function collapseSheet() {
+    if (!sheetRevealed || isWideLayout()) return;
+    _collapseSheetDOM();
     setTimeout(() => TripMap.fitToRoute(currentWaypoints, { paddingBottom: 140 }), 200);
   }
 
