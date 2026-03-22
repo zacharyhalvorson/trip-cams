@@ -382,6 +382,25 @@ const Cameras = (() => {
       });
   }
 
+  // Normalize Japan expressway camera data (JARTIC / bundled format)
+  function normalizeJP(data) {
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter(cam => cam.lat && cam.lon)
+      .map(cam => ({
+        id: `jp-${cam.id || Math.random().toString(36).slice(2, 8)}`,
+        name: cam.name || cam.location || 'Unknown',
+        highway: cam.expressway || cam.highway || cam.road || '',
+        region: 'JP',
+        lat: parseFloat(cam.lat),
+        lon: parseFloat(cam.lon),
+        imageUrl: cam.imageUrl || cam.image_url || '',
+        status: cam.status === 'inactive' ? 'inactive' : 'active',
+        direction: cam.direction || '',
+        lastUpdated: cam.lastUpdated || null,
+      }));
+  }
+
   // Alberta highway keywords — filter out urban intersection cameras
   const AB_HIGHWAY_KEYWORDS = [
     'highway', 'hwy', 'qe2', 'qeii', 'trans-canada', 'trans canada',
@@ -645,6 +664,7 @@ const Cameras = (() => {
     normalizeND,
     normalizeArcGIS,
     normalizeCA,
+    normalizeJP,
     filterByCorridor,
     sortByRoute,
     clusterCameras,

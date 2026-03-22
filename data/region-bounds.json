@@ -62,5 +62,8 @@
     "DE": { "name": "Delaware", "lat": [38.5, 39.8], "lon": [-75.8, -75.0] },
     "DC": { "name": "District of Columbia", "lat": [38.8, 39.0], "lon": [-77.1, -76.9] },
     "AK": { "name": "Alaska", "lat": [51.2, 71.4], "lon": [-179.2, -129.0] }
+  },
+  "JP": {
+    "JP": { "name": "Japan", "lat": [30.0, 46.0], "lon": [128.0, 146.0] }
   }
 }

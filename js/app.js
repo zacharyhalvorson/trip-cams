@@ -33,6 +33,14 @@ const App = (() => {
   const MAX_HISTORY = 8;
   const INITIAL_RENDER_BATCH = 12; // Cards to render immediately; rest deferred
 
+  const CA_REGIONS = new Set(['AB','BC','SK','MB','ON','QC','NB','NS','PE','NL','YT','NT','NU']);
+
+  function _countryForRegion(region) {
+    if (CA_REGIONS.has(region)) return 'CA';
+    if (region === 'JP') return 'JP';
+    return 'US';
+  }
+
   function savePrefs() {
     try {
       // Store full location objects for custom locations, just ID for predefined
@@ -556,7 +564,7 @@ const App = (() => {
       id: `current-${Date.now()}`,
       name: userLocation.nearestStop?.name || 'Current Location',
       region: userLocation.nearestStop?.region || '',
-      country: userLocation.nearestStop?.region ? ((['AB','BC','SK','MB','ON','QC','NB','NS','PE','NL','YT'].includes(userLocation.nearestStop.region)) ? 'CA' : 'US') : '',
+      country: userLocation.nearestStop?.region ? _countryForRegion(userLocation.nearestStop.region) : '',
       lat: userLocation.lat,
       lon: userLocation.lon,
       source: 'geolocation',
@@ -793,9 +801,9 @@ const App = (() => {
       const region = parts[3];
       if (!isNaN(lat) && !isNaN(lon)) {
         return {
-          id: `custom-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${region}`,
+          id: `custom-${name.toLowerCase().replace(/[\s]+/g, '-').replace(/[^\p{L}\p{N}-]/gu, '') || 'loc'}-${region}`,
           name, region, lat, lon,
-          country: ['AB','BC','SK','MB','ON','QC','NB','NS','PE','NL','YT'].includes(region) ? 'CA' : 'US',
+          country: _countryForRegion(region),
           source: 'geocode',
           displayName: `${name}, ${region}`,
         };

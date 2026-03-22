@@ -62,6 +62,55 @@
         { "id": "fort-macleod", "name": "Fort Macleod", "region": "AB", "lat": 49.7236, "lon": -113.4049 },
         { "id": "lethbridge", "name": "Lethbridge", "region": "AB", "lat": 49.6935, "lon": -112.8418 }
       ]
+    },
+    "tomei": {
+      "name": "東名・名神 (東京 → 大阪)",
+      "stops": [
+        { "id": "tokyo", "name": "東京", "region": "JP", "lat": 35.6762, "lon": 139.6503 },
+        { "id": "yokohama-machida", "name": "横浜町田", "region": "JP", "lat": 35.5245, "lon": 139.4612 },
+        { "id": "ebina", "name": "海老名", "region": "JP", "lat": 35.4479, "lon": 139.3870 },
+        { "id": "hadano", "name": "秦野中井", "region": "JP", "lat": 35.3615, "lon": 139.2358 },
+        { "id": "gotemba", "name": "御殿場", "region": "JP", "lat": 35.3022, "lon": 138.9338 },
+        { "id": "numazu", "name": "沼津", "region": "JP", "lat": 35.0907, "lon": 138.8636 },
+        { "id": "fuji", "name": "富士", "region": "JP", "lat": 35.1618, "lon": 138.6754 },
+        { "id": "shimizu", "name": "清水", "region": "JP", "lat": 35.0187, "lon": 138.4906 },
+        { "id": "shizuoka", "name": "静岡", "region": "JP", "lat": 34.9542, "lon": 138.3850 },
+        { "id": "kakegawa", "name": "掛川", "region": "JP", "lat": 34.7514, "lon": 138.0183 },
+        { "id": "hamamatsu", "name": "浜松", "region": "JP", "lat": 34.7468, "lon": 137.7398 },
+        { "id": "toyokawa", "name": "豊川", "region": "JP", "lat": 34.8271, "lon": 137.3649 },
+        { "id": "okazaki", "name": "岡崎", "region": "JP", "lat": 34.9415, "lon": 137.1539 },
+        { "id": "toyota", "name": "豊田", "region": "JP", "lat": 35.0826, "lon": 137.1028 },
+        { "id": "nagoya", "name": "名古屋", "region": "JP", "lat": 35.1503, "lon": 137.0035 },
+        { "id": "ichinomiya", "name": "一宮", "region": "JP", "lat": 35.3040, "lon": 136.8184 },
+        { "id": "sekigahara", "name": "関ケ原", "region": "JP", "lat": 35.3635, "lon": 136.4579 },
+        { "id": "maibara", "name": "米原", "region": "JP", "lat": 35.3270, "lon": 136.2769 },
+        { "id": "ritto", "name": "栗東", "region": "JP", "lat": 35.0200, "lon": 136.0006 },
+        { "id": "kyoto", "name": "京都", "region": "JP", "lat": 34.9733, "lon": 135.8254 },
+        { "id": "ibaraki", "name": "茨木", "region": "JP", "lat": 34.8131, "lon": 135.5608 },
+        { "id": "suita", "name": "吹田", "region": "JP", "lat": 34.7752, "lon": 135.5180 },
+        { "id": "osaka", "name": "大阪", "region": "JP", "lat": 34.6937, "lon": 135.5023 }
+      ]
+    },
+    "tohoku": {
+      "name": "東北道 (東京 → 仙台)",
+      "stops": [
+        { "id": "tokyo", "name": "東京", "region": "JP", "lat": 35.6762, "lon": 139.6503 },
+        { "id": "kawaguchi", "name": "川口", "region": "JP", "lat": 35.8240, "lon": 139.7273 },
+        { "id": "kuki", "name": "久喜", "region": "JP", "lat": 36.0594, "lon": 139.6683 },
+        { "id": "tatebayashi", "name": "館林", "region": "JP", "lat": 36.2561, "lon": 139.5357 },
+        { "id": "sano", "name": "佐野藤岡", "region": "JP", "lat": 36.3125, "lon": 139.5756 },
+        { "id": "tochigi", "name": "栃木", "region": "JP", "lat": 36.3851, "lon": 139.7186 },
+        { "id": "utsunomiya", "name": "宇都宮", "region": "JP", "lat": 36.5770, "lon": 139.8756 },
+        { "id": "yaita", "name": "矢板", "region": "JP", "lat": 36.8030, "lon": 139.9312 },
+        { "id": "nasu", "name": "那須", "region": "JP", "lat": 37.0174, "lon": 139.9686 },
+        { "id": "shirakawa", "name": "白河", "region": "JP", "lat": 37.1243, "lon": 140.1822 },
+        { "id": "sukagawa", "name": "須賀川", "region": "JP", "lat": 37.2859, "lon": 140.3551 },
+        { "id": "koriyama", "name": "郡山", "region": "JP", "lat": 37.3913, "lon": 140.3590 },
+        { "id": "nihonmatsu", "name": "二本松", "region": "JP", "lat": 37.5637, "lon": 140.4090 },
+        { "id": "fukushima", "name": "福島", "region": "JP", "lat": 37.7522, "lon": 140.3894 },
+        { "id": "shiroishi", "name": "白石", "region": "JP", "lat": 38.0037, "lon": 140.6189 },
+        { "id": "sendai", "name": "仙台", "region": "JP", "lat": 38.2682, "lon": 140.8694 }
+      ]
     }
   },
   "corridorBuffer": 25

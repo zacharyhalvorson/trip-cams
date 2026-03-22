@@ -1,0 +1,488 @@
+[
+  {
+    "id": "tomei-001",
+    "name": "東京IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.6330,
+    "lon": 139.6265,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105015.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-002",
+    "name": "東名川崎IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.5895,
+    "lon": 139.5332,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105016.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-003",
+    "name": "横浜町田IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.5245,
+    "lon": 139.4612,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105017.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-004",
+    "name": "海老名SA付近",
+    "expressway": "東名高速道路",
+    "lat": 35.4479,
+    "lon": 139.3870,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105018.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-005",
+    "name": "秦野中井IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.3615,
+    "lon": 139.2358,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105019.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-006",
+    "name": "大井松田IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.3310,
+    "lon": 139.1380,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105020.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-007",
+    "name": "御殿場IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.3022,
+    "lon": 138.9338,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105021.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-008",
+    "name": "裾野IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.1737,
+    "lon": 138.9066,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105022.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-009",
+    "name": "沼津IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.0907,
+    "lon": 138.8636,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105023.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-010",
+    "name": "富士IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.1618,
+    "lon": 138.6754,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105024.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-011",
+    "name": "清水IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.0187,
+    "lon": 138.4906,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105025.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-012",
+    "name": "静岡IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.9542,
+    "lon": 138.3850,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105026.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-013",
+    "name": "焼津IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.8624,
+    "lon": 138.3190,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105027.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-014",
+    "name": "掛川IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.7514,
+    "lon": 138.0183,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105028.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-015",
+    "name": "浜松IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.7468,
+    "lon": 137.7398,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105029.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-016",
+    "name": "浜松西IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.7373,
+    "lon": 137.6815,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105030.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-017",
+    "name": "三ヶ日IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.7906,
+    "lon": 137.5282,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105031.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-018",
+    "name": "豊川IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.8271,
+    "lon": 137.3649,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105032.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-019",
+    "name": "岡崎IC付近",
+    "expressway": "東名高速道路",
+    "lat": 34.9415,
+    "lon": 137.1539,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105033.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-020",
+    "name": "豊田JCT付近",
+    "expressway": "東名高速道路",
+    "lat": 35.0826,
+    "lon": 137.1028,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105034.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tomei-021",
+    "name": "名古屋IC付近",
+    "expressway": "東名高速道路",
+    "lat": 35.1503,
+    "lon": 137.0035,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_105035.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-001",
+    "name": "一宮IC付近",
+    "expressway": "名神高速道路",
+    "lat": 35.3040,
+    "lon": 136.8184,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106001.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-002",
+    "name": "岐阜羽島IC付近",
+    "expressway": "名神高速道路",
+    "lat": 35.3355,
+    "lon": 136.6762,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106002.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-003",
+    "name": "関ケ原IC付近",
+    "expressway": "名神高速道路",
+    "lat": 35.3635,
+    "lon": 136.4579,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106003.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-004",
+    "name": "米原IC付近",
+    "expressway": "名神高速道路",
+    "lat": 35.3270,
+    "lon": 136.2769,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106004.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-005",
+    "name": "彦根IC付近",
+    "expressway": "名神高速道路",
+    "lat": 35.2563,
+    "lon": 136.2234,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106005.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-006",
+    "name": "栗東IC付近",
+    "expressway": "名神高速道路",
+    "lat": 35.0200,
+    "lon": 136.0006,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106006.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-007",
+    "name": "草津JCT付近",
+    "expressway": "名神高速道路",
+    "lat": 34.9838,
+    "lon": 135.9526,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106007.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-008",
+    "name": "京都東IC付近",
+    "expressway": "名神高速道路",
+    "lat": 34.9733,
+    "lon": 135.8254,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106008.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-009",
+    "name": "京都南IC付近",
+    "expressway": "名神高速道路",
+    "lat": 34.9544,
+    "lon": 135.7526,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106009.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-010",
+    "name": "茨木IC付近",
+    "expressway": "名神高速道路",
+    "lat": 34.8131,
+    "lon": 135.5608,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106010.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-011",
+    "name": "吹田IC付近",
+    "expressway": "名神高速道路",
+    "lat": 34.7752,
+    "lon": 135.5180,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106011.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "meishin-012",
+    "name": "豊中IC付近",
+    "expressway": "名神高速道路",
+    "lat": 34.7965,
+    "lon": 135.4693,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_106012.jpg",
+    "direction": "westbound"
+  },
+  {
+    "id": "tohoku-001",
+    "name": "川口JCT付近",
+    "expressway": "東北自動車道",
+    "lat": 35.8240,
+    "lon": 139.7273,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104001.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-002",
+    "name": "浦和IC付近",
+    "expressway": "東北自動車道",
+    "lat": 35.8610,
+    "lon": 139.6531,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104002.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-003",
+    "name": "岩槻IC付近",
+    "expressway": "東北自動車道",
+    "lat": 35.9440,
+    "lon": 139.7050,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104003.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-004",
+    "name": "久喜IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.0594,
+    "lon": 139.6683,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104004.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-005",
+    "name": "加須IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.1462,
+    "lon": 139.6083,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104005.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-006",
+    "name": "館林IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.2561,
+    "lon": 139.5357,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104006.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-007",
+    "name": "佐野藤岡IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.3125,
+    "lon": 139.5756,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104007.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-008",
+    "name": "栃木IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.3851,
+    "lon": 139.7186,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104008.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-009",
+    "name": "鹿沼IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.5565,
+    "lon": 139.7393,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104009.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-010",
+    "name": "宇都宮IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.5770,
+    "lon": 139.8756,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104010.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-011",
+    "name": "矢板IC付近",
+    "expressway": "東北自動車道",
+    "lat": 36.8030,
+    "lon": 139.9312,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104011.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-012",
+    "name": "那須IC付近",
+    "expressway": "東北自動車道",
+    "lat": 37.0174,
+    "lon": 139.9686,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104012.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-013",
+    "name": "白河IC付近",
+    "expressway": "東北自動車道",
+    "lat": 37.1243,
+    "lon": 140.1822,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104013.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-014",
+    "name": "須賀川IC付近",
+    "expressway": "東北自動車道",
+    "lat": 37.2859,
+    "lon": 140.3551,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104014.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-015",
+    "name": "郡山IC付近",
+    "expressway": "東北自動車道",
+    "lat": 37.3913,
+    "lon": 140.3590,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104015.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-016",
+    "name": "二本松IC付近",
+    "expressway": "東北自動車道",
+    "lat": 37.5637,
+    "lon": 140.4090,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104016.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-017",
+    "name": "福島西IC付近",
+    "expressway": "東北自動車道",
+    "lat": 37.7522,
+    "lon": 140.3894,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104017.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-018",
+    "name": "白石IC付近",
+    "expressway": "東北自動車道",
+    "lat": 38.0037,
+    "lon": 140.6189,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104018.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-019",
+    "name": "村田JCT付近",
+    "expressway": "東北自動車道",
+    "lat": 38.1197,
+    "lon": 140.6917,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104019.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-020",
+    "name": "仙台南IC付近",
+    "expressway": "東北自動車道",
+    "lat": 38.2147,
+    "lon": 140.8507,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104020.jpg",
+    "direction": "northbound"
+  },
+  {
+    "id": "tohoku-021",
+    "name": "仙台宮城IC付近",
+    "expressway": "東北自動車道",
+    "lat": 38.2682,
+    "lon": 140.8280,
+    "imageUrl": "https://www2.jartic.or.jp/traffic/camera/image_l_104021.jpg",
+    "direction": "northbound"
+  }
+]

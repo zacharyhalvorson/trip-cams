@@ -55,6 +55,9 @@ const API = (() => {
 
     // ── US: California per-district ──
     CA: { url: null, norm: 'normalizeCA', country: 'US', multiDistrict: true },
+
+    // ── Japan ──
+    JP: { url: 'https://www2.jartic.or.jp/traffic/camera/list.json', norm: 'normalizeJP', country: 'JP' },
   };
 
   // California district endpoints and their approximate bounding boxes
@@ -186,6 +189,7 @@ const API = (() => {
     if (normName === 'normalizeND') return Cameras.normalizeND;
     if (normName === 'normalizeArcGIS') return (d) => Cameras.normalizeArcGIS(d, region);
     if (normName === 'normalizeCA') return Cameras.normalizeCA;
+    if (normName === 'normalizeJP') return Cameras.normalizeJP;
     return (d) => [];
   }
 
@@ -428,8 +432,14 @@ const API = (() => {
   const GEOCODE_CACHE = new Map(); // query -> results (session-only)
   let _geocodeAbort = null;
 
-  // Bounding box for US + Canada
+  // Bounding boxes for supported regions
   const NA_BOUNDS = { latMin: 24.5, latMax: 72.0, lonMin: -170.0, lonMax: -50.0 };
+  const JP_BOUNDS = { latMin: 24.0, latMax: 46.0, lonMin: 122.0, lonMax: 154.0 };
+
+  function isInSupportedBounds(lat, lon) {
+    return (lat >= NA_BOUNDS.latMin && lat <= NA_BOUNDS.latMax && lon >= NA_BOUNDS.lonMin && lon <= NA_BOUNDS.lonMax) ||
+           (lat >= JP_BOUNDS.latMin && lat <= JP_BOUNDS.latMax && lon >= JP_BOUNDS.lonMin && lon <= JP_BOUNDS.lonMax);
+  }
 
   // Search for cities/towns matching query
   async function fetchGeocode(query, biasLat, biasLon) {
@@ -444,10 +454,12 @@ const API = (() => {
     if (_geocodeAbort) _geocodeAbort.abort();
     _geocodeAbort = new AbortController();
 
+    // Use Japanese locale when query contains CJK characters
+    const hasJapanese = /[\u3000-\u9FFF\uF900-\uFAFF]/.test(q);
     const params = new URLSearchParams({
       q,
       limit: '8',
-      lang: 'en',
+      lang: hasJapanese ? 'ja' : 'en',
     });
     // Add place type filters
     params.append('osm_tag', 'place:city');
@@ -467,9 +479,7 @@ const API = (() => {
         .filter(f => {
           const c = f.geometry?.coordinates;
           if (!c) return false;
-          // Filter to North America bounding box
-          return c[1] >= NA_BOUNDS.latMin && c[1] <= NA_BOUNDS.latMax &&
-                 c[0] >= NA_BOUNDS.lonMin && c[0] <= NA_BOUNDS.lonMax;
+          return isInSupportedBounds(c[1], c[0]);
         })
         .map(f => photonToLocation(f));
 
@@ -502,7 +512,8 @@ const API = (() => {
     if (_geocodeAbort) _geocodeAbort.abort();
     _geocodeAbort = new AbortController();
 
-    const params = new URLSearchParams({ q, limit: '8', lang: 'en' });
+    const hasJapanese = /[\u3000-\u9FFF\uF900-\uFAFF]/.test(q);
+    const params = new URLSearchParams({ q, limit: '8', lang: hasJapanese ? 'ja' : 'en' });
     if (biasLat != null && biasLon != null) {
       params.set('lat', biasLat.toFixed(4));
       params.set('lon', biasLon.toFixed(4));
@@ -518,15 +529,16 @@ const API = (() => {
       for (const f of (data.features || [])) {
         const c = f.geometry?.coordinates;
         if (!c) continue;
-        if (c[1] < NA_BOUNDS.latMin || c[1] > NA_BOUNDS.latMax || c[0] < NA_BOUNDS.lonMin || c[0] > NA_BOUNDS.lonMax) continue;
+        if (!isInSupportedBounds(c[1], c[0])) continue;
 
         const props = f.properties || {};
         const cityName = props.city || props.county || props.name;
         const state = props.state;
         const country = props.countrycode?.toUpperCase();
-        if (!cityName || !state || (country !== 'US' && country !== 'CA')) continue;
+        if (!cityName || (country !== 'US' && country !== 'CA' && country !== 'JP')) continue;
+        if (!state && country !== 'JP') continue;
 
-        const region = resolveRegionCode(state, country);
+        const region = resolveRegionCode(state || '', country);
         const key = `${cityName}|${region}`;
         if (!citySet.has(key)) {
           citySet.set(key, {
@@ -537,7 +549,7 @@ const API = (() => {
             lat: c[1],
             lon: c[0],
             source: 'geocode',
-            displayName: `${cityName}, ${region}`,
+            displayName: country === 'JP' ? `${cityName}, ${state || 'JP'}` : `${cityName}, ${region}`,
             isNearestCity: true,
           });
         }
@@ -593,24 +605,28 @@ const API = (() => {
     const state = props.state || '';
     const region = resolveRegionCode(state, country);
     const name = props.city || props.town || props.name || 'Unknown';
+    const resolvedCountry = country === 'CA' ? 'CA' : country === 'JP' ? 'JP' : 'US';
 
     return {
       id: `custom-${slugify(name)}-${region}`,
       name,
       region,
-      country: country === 'CA' ? 'CA' : 'US',
+      country: resolvedCountry,
       lat: coords[1],
       lon: coords[0],
       source: 'geocode',
-      displayName: `${name}, ${region}`,
+      displayName: resolvedCountry === 'JP' ? `${name}, ${state || 'JP'}` : `${name}, ${region}`,
     };
   }
 
-  // Resolve a state/province name to its 2-letter code
+  // Resolve a state/province/prefecture name to its 2-letter code
   function resolveRegionCode(stateName, countryCode) {
     const name = stateName.toLowerCase().trim();
     // Check if already a valid 2-letter code
     if (stateName.length === 2 && /^[A-Z]{2}$/.test(stateName)) return stateName;
+
+    // Japan: all prefectures map to single JP region
+    if (countryCode === 'JP') return 'JP';
 
     const US_STATES = {
       'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
@@ -640,7 +656,7 @@ const API = (() => {
   }
 
   function slugify(str) {
-    return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return str.toLowerCase().replace(/[\s]+/g, '-').replace(/[^\p{L}\p{N}-]/gu, '').replace(/(^-|-$)/g, '') || 'loc';
   }
 
   // ── Public API ─────────────────────────────────────────────────
