@@ -5,8 +5,8 @@
     </clipPath>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#c8d5d8"/>
-      <stop offset="40%" stop-color="#d4ddd0"/>
-      <stop offset="100%" stop-color="#9ab89a"/>
+      <stop offset="40%" stop-color="#d0d8dd"/>
+      <stop offset="100%" stop-color="#9aabb8"/>
     </linearGradient>
     <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#555"/>

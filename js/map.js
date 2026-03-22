@@ -80,7 +80,7 @@ const TripMap = (() => {
   }
 
   const ROUTE_STYLE_FALLBACK = {
-    color: '#2DB84B',
+    color: '#2D7FF9',
     weight: 3,
     opacity: 0.5,
     dashArray: '8, 8',
@@ -88,7 +88,7 @@ const TripMap = (() => {
   };
 
   const ROUTE_STYLE_PRECISE = {
-    color: '#2DB84B',
+    color: '#2D7FF9',
     weight: 4,
     opacity: 0.7,
     lineCap: 'round',
