@@ -907,6 +907,28 @@ const App = (() => {
       ? Cameras.filterByCorridor(allCameras, filterPath, buffer)
       : allCameras;
 
+    // Secondary distance check: verify each camera is actually within buffer
+    // of the route using direct haversine to sampled route points.
+    // This catches any bugs in the segment projection math.
+    if (useGeometry && cameras.length > 50) {
+      // Sample route geometry every Nth point for fast checking
+      const step = Math.max(1, Math.floor(filterPath.length / 200));
+      const samples = [];
+      for (let i = 0; i < filterPath.length; i += step) samples.push(filterPath[i]);
+      samples.push(filterPath[filterPath.length - 1]);
+
+      cameras = cameras.filter(cam => {
+        // Check if camera is within (buffer * 3)km of ANY sampled route point
+        // Using 3x buffer since samples skip intermediate points
+        const maxDist = buffer * 3;
+        for (const s of samples) {
+          const d = Cameras.haversine(cam.lat, cam.lon, s.lat, s.lon);
+          if (d <= maxDist) return true;
+        }
+        return false;
+      });
+    }
+
     document.title = `${useGeometry?'G':'S'}${buffer} ${cameras.length}/${allCameras.length}`;
 
     // Sort by route order
