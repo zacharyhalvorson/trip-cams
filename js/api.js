@@ -40,7 +40,13 @@ const API = (() => {
     CT: { url: 'https://ctroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
 
     // ── US: Custom formats ──
-    WA: { url: 'https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query?where=1%3D1&outFields=*&f=json', norm: 'normalizeArcGIS', country: 'US' },
+    WA: {
+      urls: [
+        'https://www.wsdot.wa.gov/Traffic/api/HighwayCameras/HighwayCamerasREST.svc/GetCamerasAsJson?AccessCode=75de6d3e-f4e0-4dc0-841f-11b95c1acc7e',
+        'https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query?where=1%3D1&outFields=*&f=json',
+      ],
+      norm: 'normalizeWA', country: 'US'
+    },
     OR: { url: 'https://gis.odot.state.or.us/arcgis1006/rest/services/trip_check/Trip_Check_Terrain/MapServer/1/query?where=1%3D1&outFields=*&f=json', norm: 'normalizeArcGIS', country: 'US' },
     MD: { url: 'https://chart.maryland.gov/DataFeeds/GetCamerasJson', norm: 'normalizeMD', country: 'US' },
     OH: { url: 'https://publicapi.ohgo.com/api/v1/cameras', norm: 'normalizeOH', country: 'US' },
@@ -267,7 +273,48 @@ const API = (() => {
       return fetchCalifornia(normalizer, _currentRouteGeometry);
     }
 
+    // Support entries with multiple fallback URLs
+    if (entry.urls) {
+      return fetchRegionMultiUrl(region, entry.urls, normalizer);
+    }
     return fetchRegion(region, entry.url, normalizer);
+  }
+
+  // Try multiple endpoint URLs in sequence until one succeeds
+  async function fetchRegionMultiUrl(region, urls, normalizer) {
+    const cached = getCachedData(region);
+    if (cached && cached.fresh) {
+      return { data: normalizer(cached.data), fromCache: true };
+    }
+    if (cached && !cached.fresh) {
+      // Stale cache — return it, refresh in background
+      (async () => {
+        for (const url of urls) {
+          try {
+            const raw = await fetchWithRetry(url);
+            setCachedData(region, raw);
+            return;
+          } catch (e) { /* try next URL */ }
+        }
+      })();
+      return { data: normalizer(cached.data), fromCache: true, stale: true };
+    }
+    // No cache — try each URL
+    for (const url of urls) {
+      try {
+        const raw = await fetchWithRetry(url);
+        setCachedData(region, raw);
+        return { data: normalizer(raw), fromCache: false };
+      } catch (e) { /* try next URL */ }
+    }
+    // All URLs failed — try fallback file
+    console.warn(`${region} all API URLs failed, using fallback`);
+    const fallback = await fetchFallback(region);
+    if (fallback) {
+      setCachedData(region, fallback);
+      return { data: normalizer(fallback), fromCache: true };
+    }
+    return { data: [], fromCache: true, error: 'All endpoints failed' };
   }
 
   // California: fetch only relevant districts, merge results

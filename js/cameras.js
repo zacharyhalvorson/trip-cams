@@ -167,6 +167,32 @@ const Cameras = (() => {
 
   // Normalize WSDOT mobile JSON (data.wsdot.wa.gov/mobile/Cameras.json)
   function normalizeWA(data) {
+    // REST API format: array of camera objects with CameraLocation nested object
+    if (Array.isArray(data) && data.length > 0 && data[0].CameraID !== undefined) {
+      return data
+        .filter(cam => {
+          const lat = cam.DisplayLatitude || cam.CameraLocation?.Latitude;
+          const lon = cam.DisplayLongitude || cam.CameraLocation?.Longitude;
+          return lat && lon;
+        })
+        .map(cam => ({
+          id: `wa-${cam.CameraID}`,
+          name: cam.Title || cam.Description || 'Unknown',
+          highway: cam.CameraLocation?.RoadName || '',
+          region: 'WA',
+          lat: cam.DisplayLatitude || cam.CameraLocation?.Latitude,
+          lon: cam.DisplayLongitude || cam.CameraLocation?.Longitude,
+          imageUrl: cam.ImageURL || '',
+          status: cam.IsActive !== false ? 'active' : 'inactive',
+          direction: cam.CameraLocation?.Direction || '',
+          lastUpdated: null,
+        }));
+    }
+    // ArcGIS format fallback
+    if (data?.features) {
+      return Cameras.normalizeArcGIS(data, 'WA');
+    }
+    // Mobile endpoint format: { cameras: { items: [...] } }
     const items = data?.cameras?.items || (Array.isArray(data) ? data : []);
     return items
       .filter(cam => cam.lat && cam.lon)
