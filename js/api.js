@@ -5,10 +5,6 @@
 const API = (() => {
   const CORS_PROXY = 'https://corsproxy.io/?url=';
 
-  // WSDOT access code (free, public registration)
-  // Register at: https://wsdot.wa.gov/traffic/api/
-  const WSDOT_ACCESS_CODE = '';
-
   // ── Camera API Registry ────────────────────────────────────────
   // Each entry: { url, normalizer, country, needsProxy }
   // normalizer is a string key resolved at fetch time (Cameras module)
@@ -43,7 +39,7 @@ const API = (() => {
     CT: { url: 'https://ctroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
 
     // ── US: Custom formats ──
-    WA: { url: 'https://wsdot.com/Traffic/api/HighwayCameras/HighwayCamerasREST.svc/GetCamerasAsJson', norm: 'normalizeWA', country: 'US', needsAccessCode: true },
+    WA: { url: 'https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query?where=1%3D1&outFields=*&f=json', norm: 'normalizeArcGIS', country: 'US' },
     MD: { url: 'https://chart.maryland.gov/DataFeeds/GetCamerasJson', norm: 'normalizeMD', country: 'US' },
     OH: { url: 'https://publicapi.ohgo.com/api/v1/cameras', norm: 'normalizeOH', country: 'US' },
     ND: { url: 'https://travelfiles.dot.nd.gov/geojson_nc/cameras.json', norm: 'normalizeND', country: 'US' },
@@ -230,21 +226,6 @@ const API = (() => {
     if (!entry) return { data: [], fromCache: true, error: 'Unknown region' };
 
     const normalizer = getNormalizer(region);
-
-    // Special case: WSDOT needs access code
-    if (entry.needsAccessCode && region === 'WA') {
-      if (!WSDOT_ACCESS_CODE) {
-        const cached = getCachedData('WA');
-        if (cached) return { data: normalizer(cached.data), fromCache: true };
-        const fallback = await fetchFallback('WA');
-        if (fallback) {
-          setCachedData('WA', fallback);
-          return { data: normalizer(fallback), fromCache: true };
-        }
-        return { data: [], fromCache: true, error: 'No WSDOT access code' };
-      }
-      return fetchRegion('WA', `${entry.url}?AccessCode=${WSDOT_ACCESS_CODE}`, normalizer);
-    }
 
     // Special case: California multi-district
     if (entry.multiDistrict && region === 'CA') {
