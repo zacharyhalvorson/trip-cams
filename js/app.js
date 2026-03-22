@@ -391,7 +391,7 @@ const App = (() => {
     dom.dropdownOverlay.classList.add('active');
     dom.dropdownSearch.value = '';
     renderDropdownList('');
-    requestAnimationFrame(() => dom.dropdownSearch.focus());
+    dom.dropdownSearch.focus();
   }
 
   function closeDropdown() {
