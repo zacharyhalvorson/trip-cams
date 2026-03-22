@@ -39,7 +39,7 @@
   /* Spacing */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --header-height: 80px;
+  --header-height: calc(80px + var(--safe-top));
 
   /* Animation */
   --spring: cubic-bezier(0.25, 1, 0.5, 1);
@@ -1435,7 +1435,7 @@ button {
 
 @media (min-width: 769px) {
   :root {
-    --header-height: 80px;
+    --header-height: calc(80px + var(--safe-top));
   }
 
   .header {
