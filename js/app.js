@@ -927,8 +927,11 @@ const App = (() => {
       return;
     }
 
-    // Determine which regions the route passes through
+    // Determine which regions the route passes through, origin region first
     const neededRegions = new Set();
+    if (fromStop?.region && API.hasRegion(fromStop.region)) {
+      neededRegions.add(fromStop.region);
+    }
     if (currentWaypoints.length > 0) {
       for (const wp of currentWaypoints) {
         if (wp.region && API.hasRegion(wp.region)) neededRegions.add(wp.region);

@@ -809,7 +809,7 @@ button {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 40px 12px 0;
+  padding: 28px 12px 0;
   padding-bottom: calc(var(--safe-bottom) + 20px);
   scrollbar-width: none;
 }
