@@ -1699,14 +1699,19 @@ const App = (() => {
           const progress = pull / PTR_MAX;
           ptr.style.height = pull + 'px';
           ptr.style.opacity = progress;
-          ptr.querySelector('svg').style.transform = `rotate(${progress * 360}deg)`;
+          // Reveal ticks proportionally as user pulls
+          const ticks = ptr.querySelectorAll('.ios-tick');
+          const visibleCount = Math.round(progress * ticks.length);
+          ticks.forEach((t, i) => { t.style.opacity = i < visibleCount ? '0.6' : '0.15'; });
           if (pull >= PTR_TRIGGER && !triggered) {
             triggered = true;
-            // Start fetch immediately so it can finish before release
+            // Start spinning and fetch immediately
+            ticks.forEach(t => { t.style.opacity = ''; });
+            ptr.classList.add('spinning');
             isRefreshing = true;
             doRefresh().then(() => {
               isRefreshing = false;
-              ptr.classList.remove('loading');
+              ptr.classList.remove('loading', 'spinning');
             });
           }
         }
@@ -1742,7 +1747,7 @@ const App = (() => {
       ptr.classList.remove('pulling');
       ptr.style.height = '';
       ptr.style.opacity = '';
-      ptr.querySelector('svg').style.transform = '';
+      ptr.querySelectorAll('.ios-tick').forEach(t => { t.style.opacity = ''; });
     }
 
     async function doRefresh() {

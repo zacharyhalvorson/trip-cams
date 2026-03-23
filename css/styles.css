@@ -853,14 +853,17 @@ button {
   align-items: center;
   justify-content: center;
 }
-.ptr.loading .ptr-spinner svg {
-  animation: ptrFade 1.2s ease-in-out infinite;
+.ptr.loading .ios-tick {
+  animation: ios-tick-fade 0.8s linear infinite;
 }
-
-@keyframes ptrFade {
-  0%, 100% { opacity: 0.2; transform: scale(0.92); }
-  50%      { opacity: 1;   transform: scale(1); }
-}
+.ptr.loading .ios-tick:nth-child(1) { animation-delay: 0s; }
+.ptr.loading .ios-tick:nth-child(2) { animation-delay: 0.1s; }
+.ptr.loading .ios-tick:nth-child(3) { animation-delay: 0.2s; }
+.ptr.loading .ios-tick:nth-child(4) { animation-delay: 0.3s; }
+.ptr.loading .ios-tick:nth-child(5) { animation-delay: 0.4s; }
+.ptr.loading .ios-tick:nth-child(6) { animation-delay: 0.5s; }
+.ptr.loading .ios-tick:nth-child(7) { animation-delay: 0.6s; }
+.ptr.loading .ios-tick:nth-child(8) { animation-delay: 0.7s; }
 
 /* Centre pull spinner between handle and first card when sheet is collapsed */
 .sheet.peeking .ptr.pulling {
@@ -874,12 +877,51 @@ button {
   justify-content: center;
 }
 
-.ptr-spinner svg {
-  transition: transform 0.15s ease;
+/* iOS-style activity indicator */
+.ios-spinner {
+  position: relative;
+  width: 22px;
+  height: 22px;
 }
 
-.ptr.refreshing .ptr-spinner svg {
-  animation: ptrFade 1.2s ease-in-out infinite;
+.ios-tick {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2.5px;
+  height: 6px;
+  margin-left: -1.25px;
+  border-radius: 1.25px;
+  background: currentColor;
+  opacity: 0.25;
+  transform-origin: center 11px;
+}
+
+.ios-tick:nth-child(1) { transform: rotate(0deg); }
+.ios-tick:nth-child(2) { transform: rotate(45deg); }
+.ios-tick:nth-child(3) { transform: rotate(90deg); }
+.ios-tick:nth-child(4) { transform: rotate(135deg); }
+.ios-tick:nth-child(5) { transform: rotate(180deg); }
+.ios-tick:nth-child(6) { transform: rotate(225deg); }
+.ios-tick:nth-child(7) { transform: rotate(270deg); }
+.ios-tick:nth-child(8) { transform: rotate(315deg); }
+
+/* Spinning state: staggered fade on each tick */
+.ptr.spinning .ios-tick {
+  animation: ios-tick-fade 0.8s linear infinite;
+}
+.ptr.spinning .ios-tick:nth-child(1) { animation-delay: 0s; }
+.ptr.spinning .ios-tick:nth-child(2) { animation-delay: 0.1s; }
+.ptr.spinning .ios-tick:nth-child(3) { animation-delay: 0.2s; }
+.ptr.spinning .ios-tick:nth-child(4) { animation-delay: 0.3s; }
+.ptr.spinning .ios-tick:nth-child(5) { animation-delay: 0.4s; }
+.ptr.spinning .ios-tick:nth-child(6) { animation-delay: 0.5s; }
+.ptr.spinning .ios-tick:nth-child(7) { animation-delay: 0.6s; }
+.ptr.spinning .ios-tick:nth-child(8) { animation-delay: 0.7s; }
+
+@keyframes ios-tick-fade {
+  0%, 39% { opacity: 1; }
+  40%, 100% { opacity: 0.25; }
 }
 
 .camera-card {
