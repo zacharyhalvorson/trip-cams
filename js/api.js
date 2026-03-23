@@ -42,9 +42,9 @@ const API = (() => {
     // ── US: Custom formats ──
     WA: {
       urls: [
-        'https://www.wsdot.wa.gov/Traffic/api/HighwayCameras/HighwayCamerasREST.svc/GetCamerasAsJson?AccessCode=75de6d3e-f4e0-4dc0-841f-11b95c1acc7e',
         'https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query?where=1%3D1&outFields=*&f=json',
         'https://www.wsdot.wa.gov/arcgis/rest/services/Production/WSDOTTrafficCameras/MapServer/0/query?where=1%3D1&outFields=*&f=json',
+        'https://www.wsdot.wa.gov/Traffic/api/HighwayCameras/HighwayCamerasREST.svc/GetCamerasAsJson?AccessCode=75de6d3e-f4e0-4dc0-841f-11b95c1acc7e',
       ],
       norm: 'normalizeWA', country: 'US'
     },
@@ -282,6 +282,9 @@ const API = (() => {
   }
 
   // Try multiple endpoint URLs in sequence until one succeeds
+  // Two-phase fetch for multi-URL endpoints: try all URLs direct first (fast),
+  // then try with proxy only if all direct attempts fail. This avoids the full
+  // retry chain per URL which can take 40s+ each when endpoints are down.
   async function fetchRegionMultiUrl(region, urls, normalizer) {
     const cached = getCachedData(region);
     if (cached && cached.fresh) {
@@ -292,7 +295,15 @@ const API = (() => {
       (async () => {
         for (const url of urls) {
           try {
-            const raw = await fetchWithRetry(url);
+            const raw = await fetchDirect(url);
+            setCachedData(region, raw);
+            return;
+          } catch (e) { /* try next URL */ }
+        }
+        // Direct failed for all — try with proxy
+        for (const url of urls) {
+          try {
+            const raw = await fetchWithProxy(url);
             setCachedData(region, raw);
             return;
           } catch (e) { /* try next URL */ }
@@ -300,10 +311,18 @@ const API = (() => {
       })();
       return { data: normalizer(cached.data), fromCache: true, stale: true };
     }
-    // No cache — try each URL
+    // No cache — Phase 1: try each URL direct (fast pass)
     for (const url of urls) {
       try {
-        const raw = await fetchWithRetry(url);
+        const raw = await fetchDirect(url);
+        setCachedData(region, raw);
+        return { data: normalizer(raw), fromCache: false };
+      } catch (e) { /* try next URL */ }
+    }
+    // Phase 2: try each URL with proxy
+    for (const url of urls) {
+      try {
+        const raw = await fetchWithProxy(url);
         setCachedData(region, raw);
         return { data: normalizer(raw), fromCache: false };
       } catch (e) { /* try next URL */ }
