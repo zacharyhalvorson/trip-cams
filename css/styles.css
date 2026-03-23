@@ -781,6 +781,7 @@ button {
   padding: 12px 0;
   cursor: grab;
   border-radius: 20px 20px 0 0;
+  background: var(--navy);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--duration) var(--ease-out);
@@ -809,7 +810,7 @@ button {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 28px 12px 0;
+  padding: 40px 12px 0;
   padding-bottom: calc(var(--safe-bottom) + 20px);
   scrollbar-width: none;
 }
