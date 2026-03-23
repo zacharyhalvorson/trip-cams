@@ -45,6 +45,14 @@ const App = (() => {
   let _prefsOrHashSetOrigin = false; // true if prefs or hash already set the origin
   let _geocodeDebounceTimer = null;
 
+  // Auto-scroll: continuously scroll camera list to user's driving position
+  let _autoScrollActive = true;    // true until user manually scrolls
+  let _autoScrollPausedAt = 0;     // timestamp when user last scrolled manually
+  let _autoScrollPausedLoc = null; // user location when auto-scroll was paused
+  const AUTO_SCROLL_RESUME_IDLE_MS = 60000;  // resume after 60s of no manual scroll
+  const AUTO_SCROLL_RESUME_DIST_KM = 2;      // resume if user moves >2km from pause point
+  let _geoWatchId = null;          // watchPosition ID
+
   const PREFS_KEY = 'tripcams_prefs';
   const ROUTE_DATA_KEY = 'tripcams_route_data';
   const HISTORY_KEY = 'tripcams_destination_history';
@@ -284,42 +292,46 @@ const App = (() => {
         }
       });
 
-    // Detect user location — used for picker + auto-origin
+    // Detect user location — used for picker + auto-origin + auto-scroll while driving
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      let _firstGeoFix = true;
+      _geoWatchId = navigator.geolocation.watchPosition(
         async (pos) => {
           const { latitude, longitude } = pos.coords;
           TripMap.showUserLocation(latitude, longitude);
           const nearest = allStops.length > 0 ? Cameras.nearestStop(latitude, longitude, allStops) : null;
           userLocation = { lat: latitude, lon: longitude, nearestStop: nearest };
 
-          // Reverse geocode to get city name
-          try {
-            const city = await API.reverseGeocode(latitude, longitude);
-            if (city) {
-              userLocation.city = city;
-              // Auto-set origin and destination on first load if no prefs/hash set them
-              if (fromStop && fromStop.source !== 'geocode' && fromStop.source !== 'geolocation' && !_prefsOrHashSetOrigin) {
-                fromStop = city;
-                // Set destination to closest major city that's >50km away
-                const majorCityIds = ['calgary', 'vancouver', 'seattle', 'kamloops', 'kelowna', 'vernon', 'penticton', 'lethbridge', 'bellingham', 'nelson', 'cranbrook'];
-                const majorStops = allStops.filter(s => majorCityIds.includes(s.id) && Cameras.haversine(latitude, longitude, s.lat, s.lon) > 50);
-                if (majorStops.length > 0) {
-                  toStop = Cameras.nearestStop(latitude, longitude, majorStops);
+          // First fix: reverse geocode + auto-origin (same as before)
+          if (_firstGeoFix) {
+            _firstGeoFix = false;
+            try {
+              const city = await API.reverseGeocode(latitude, longitude);
+              if (city) {
+                userLocation.city = city;
+                if (fromStop && fromStop.source !== 'geocode' && fromStop.source !== 'geolocation' && !_prefsOrHashSetOrigin) {
+                  fromStop = city;
+                  const majorCityIds = ['calgary', 'vancouver', 'seattle', 'kamloops', 'kelowna', 'vernon', 'penticton', 'lethbridge', 'bellingham', 'nelson', 'cranbrook'];
+                  const majorStops = allStops.filter(s => majorCityIds.includes(s.id) && Cameras.haversine(latitude, longitude, s.lat, s.lon) > 50);
+                  if (majorStops.length > 0) {
+                    toStop = Cameras.nearestStop(latitude, longitude, majorStops);
+                  }
+                  updateRouteDisplay();
+                  updateRoute();
+                  loadCameras();
+                  updateHash();
+                  savePrefs();
+                } else if (fromStop && fromStop.source === 'geolocation') {
+                  fromStop.displayName = city.displayName;
+                  updateRouteDisplay();
+                  savePrefs();
                 }
-                updateRouteDisplay();
-                updateRoute();
-                loadCameras();
-                updateHash();
-                savePrefs();
-              } else if (fromStop && fromStop.source === 'geolocation') {
-                // Update displayName for returning users who had "Current Location" saved
-                fromStop.displayName = city.displayName;
-                updateRouteDisplay();
-                savePrefs();
               }
-            }
-          } catch (e) { /* ignore geocode failure */ }
+            } catch (e) { /* ignore geocode failure */ }
+          }
+
+          // Auto-scroll camera list to nearest camera while driving
+          _autoScrollToNearest();
         },
         () => {},
         { enableHighAccuracy: true, timeout: 10000 }
@@ -816,6 +828,53 @@ const App = (() => {
 
     highlightCard(nearestCard);
     if (nearestCard) TripMap.panTo(userLocation.lat, userLocation.lon);
+  }
+
+  // ── Auto-scroll while driving ──────────────────────────────
+
+  function _autoScrollToNearest() {
+    if (!userLocation || filteredCameras.length === 0) return;
+
+    // Check if auto-scroll should resume after being paused
+    if (!_autoScrollActive) {
+      const idleEnough = Date.now() - _autoScrollPausedAt > AUTO_SCROLL_RESUME_IDLE_MS;
+      const movedFar = _autoScrollPausedLoc &&
+        Cameras.haversine(userLocation.lat, userLocation.lon,
+          _autoScrollPausedLoc.lat, _autoScrollPausedLoc.lon) > AUTO_SCROLL_RESUME_DIST_KM;
+      if (idleEnough || movedFar) {
+        _autoScrollActive = true;
+      } else {
+        return;
+      }
+    }
+
+    // Find nearest camera card
+    const { lat, lon } = userLocation;
+    const cards = dom.cameraList.querySelectorAll('.camera-card');
+    if (cards.length === 0) return;
+
+    let nearestCard = null;
+    let minDist = Infinity;
+    for (const card of cards) {
+      const cam = filteredCameras.find(c => c.id === card.dataset.id);
+      if (!cam) continue;
+      const d = Cameras.haversine(lat, lon, cam.lat, cam.lon);
+      if (d < minDist) {
+        minDist = d;
+        nearestCard = card;
+      }
+    }
+
+    if (!nearestCard) return;
+
+    // Only scroll if the nearest camera changed
+    if (nearestCard.dataset.id === _topCameraId) return;
+
+    // Suppress list→map sync feedback during auto-scroll
+    _mapInitiatedScroll = true;
+    nearestCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    _topCameraId = nearestCard.dataset.id;
+    setTimeout(() => { _mapInitiatedScroll = false; }, 800);
   }
 
   // ── URL Hash ─────────────────────────────────────────────────
@@ -1468,6 +1527,15 @@ const App = (() => {
       if (_mapInitiatedScroll) return;
       if (!isWideLayout() && !sheetRevealed) return;
 
+      // User is manually scrolling — pause auto-scroll
+      if (_autoScrollActive) {
+        _autoScrollActive = false;
+        _autoScrollPausedAt = Date.now();
+        _autoScrollPausedLoc = userLocation ? { lat: userLocation.lat, lon: userLocation.lon } : null;
+      } else {
+        _autoScrollPausedAt = Date.now(); // refresh idle timer on continued scrolling
+      }
+
       if (!_hasZoomedForScroll) {
         _hasZoomedForScroll = true;
         // One-time: instantly zoom to fit cameras visible in the list
@@ -1588,6 +1656,7 @@ const App = (() => {
 
   function centerMap() {
     if (userLocation) {
+      _autoScrollActive = true; // re-enable auto-scroll when user centers on location
       snapToCurrentLocation();
       return;
     }
@@ -1928,6 +1997,7 @@ const App = (() => {
         if (now - lastTapTime < DOUBLE_TAP_MS) {
           lastTapTime = 0;
           if (!sheetRevealed) revealSheet();
+          _autoScrollActive = true; // re-enable auto-scroll on double-tap
           snapToCurrentLocation();
         } else {
           lastTapTime = now;
