@@ -44,6 +44,10 @@ const App = (() => {
   let userLocation = null; // { lat, lon, nearestStop, city? } when geolocation available
   let _prefsOrHashSetOrigin = false; // true if prefs or hash already set the origin
   let _geocodeDebounceTimer = null;
+  let _lastGeoUpdateTime = 0; // throttle visibilitychange geo updates
+
+  const GEO_OPTS = { enableHighAccuracy: true, timeout: 10000 };
+  const GEO_THROTTLE_MS = 30000; // min interval between visibilitychange geo updates
 
   const PREFS_KEY = 'tripcams_prefs';
   const ROUTE_DATA_KEY = 'tripcams_route_data';
@@ -284,24 +288,17 @@ const App = (() => {
         }
       });
 
-    // Detect user location — used for picker + auto-origin + scroll-to-position on resume
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
-          const { latitude, longitude } = pos.coords;
-          TripMap.showUserLocation(latitude, longitude);
-          const nearest = allStops.length > 0 ? Cameras.nearestStop(latitude, longitude, allStops) : null;
-          userLocation = { lat: latitude, lon: longitude, nearestStop: nearest };
+          const { latitude, longitude } = updateUserLocation(pos);
 
-          // Reverse geocode to get city name
           try {
             const city = await API.reverseGeocode(latitude, longitude);
             if (city) {
               userLocation.city = city;
-              // Auto-set origin and destination on first load if no prefs/hash set them
               if (fromStop && fromStop.source !== 'geocode' && fromStop.source !== 'geolocation' && !_prefsOrHashSetOrigin) {
                 fromStop = city;
-                // Set destination to closest major city that's >50km away
                 const majorCityIds = ['calgary', 'vancouver', 'seattle', 'kamloops', 'kelowna', 'vernon', 'penticton', 'lethbridge', 'bellingham', 'nelson', 'cranbrook'];
                 const majorStops = allStops.filter(s => majorCityIds.includes(s.id) && Cameras.haversine(latitude, longitude, s.lat, s.lon) > 50);
                 if (majorStops.length > 0) {
@@ -313,7 +310,6 @@ const App = (() => {
                 updateHash();
                 savePrefs();
               } else if (fromStop && fromStop.source === 'geolocation') {
-                // Update displayName for returning users who had "Current Location" saved
                 fromStop.displayName = city.displayName;
                 updateRouteDisplay();
                 savePrefs();
@@ -321,26 +317,20 @@ const App = (() => {
             }
           } catch (e) { /* ignore geocode failure */ }
 
-          // Scroll to nearest camera on initial load
           snapToCurrentLocation();
         },
         () => {},
-        { enableHighAccuracy: true, timeout: 10000 }
+        GEO_OPTS
       );
 
-      // When the user returns to the app, refresh position and scroll to nearest camera
+      // Refresh position and snap list when user returns to the app
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'visible') return;
+        if (Date.now() - _lastGeoUpdateTime < GEO_THROTTLE_MS) return;
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const { latitude, longitude } = pos.coords;
-            TripMap.showUserLocation(latitude, longitude);
-            const nearest = allStops.length > 0 ? Cameras.nearestStop(latitude, longitude, allStops) : null;
-            userLocation = { lat: latitude, lon: longitude, nearestStop: nearest };
-            snapToCurrentLocation();
-          },
+          (pos) => { updateUserLocation(pos); snapToCurrentLocation(); },
           () => {},
-          { enableHighAccuracy: true, timeout: 10000 }
+          GEO_OPTS
         );
       });
     }
@@ -809,7 +799,16 @@ const App = (() => {
     setTimeout(() => card.classList.remove('highlighted'), 2000);
   }
 
-  // ── Snap to Current Location ─────────────────────────────────
+  // ── Geolocation helpers ─────────────────────────────────────
+
+  function updateUserLocation(pos) {
+    const { latitude, longitude } = pos.coords;
+    TripMap.showUserLocation(latitude, longitude);
+    const nearest = allStops.length > 0 ? Cameras.nearestStop(latitude, longitude, allStops) : null;
+    userLocation = { lat: latitude, lon: longitude, nearestStop: nearest };
+    _lastGeoUpdateTime = Date.now();
+    return { latitude, longitude };
+  }
 
   function snapToCurrentLocation() {
     const cards = dom.cameraList.querySelectorAll('.camera-card');
@@ -820,11 +819,12 @@ const App = (() => {
     }
 
     const { lat, lon } = userLocation;
+    const camById = new Map(filteredCameras.map(c => [c.id, c]));
     let nearestCard = null;
     let minDist = Infinity;
 
     for (const card of cards) {
-      const cam = filteredCameras.find(c => c.id === card.dataset.id);
+      const cam = camById.get(card.dataset.id);
       if (!cam) continue;
       const d = Cameras.haversine(lat, lon, cam.lat, cam.lon);
       if (d < minDist) {
@@ -1610,23 +1610,13 @@ const App = (() => {
       snapToCurrentLocation();
       return;
     }
-    // Try to get location on demand
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          TripMap.showUserLocation(latitude, longitude);
-          const nearest = Cameras.nearestStop(latitude, longitude, allStops);
-          if (nearest) {
-            userLocation = { lat: latitude, lon: longitude, nearestStop: nearest };
-          }
-          snapToCurrentLocation();
-        },
+        (pos) => { updateUserLocation(pos); snapToCurrentLocation(); },
         () => {
-          // Denied — fall back to fitting route
           if (currentWaypoints.length > 0) TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        GEO_OPTS
       );
     } else if (currentWaypoints.length > 0) {
       TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
