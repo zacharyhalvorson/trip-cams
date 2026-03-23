@@ -453,6 +453,23 @@ const Cameras = (() => {
     return waypoints.map(w => `${w.lat.toFixed(3)},${w.lon.toFixed(3)}`).join('|');
   }
 
+  // Downsample a dense polyline to reduce segment count for filtering/sorting.
+  // Keeps every Nth point so that spacing is roughly `targetSpacingKm`.
+  function downsamplePolyline(waypoints, targetSpacingKm) {
+    if (waypoints.length <= 100) return waypoints;
+    const n = waypoints.length;
+    // Straight-line distance × 1.3 to approximate road sinuosity
+    const totalKm = haversine(waypoints[0].lat, waypoints[0].lon,
+      waypoints[n - 1].lat, waypoints[n - 1].lon) * 1.3;
+    const avgSpacing = totalKm / n;
+    const step = Math.max(1, Math.round(targetSpacingKm / avgSpacing));
+    if (step <= 1) return waypoints;
+    const result = [];
+    for (let i = 0; i < n; i += step) result.push(waypoints[i]);
+    if (result[result.length - 1] !== waypoints[n - 1]) result.push(waypoints[n - 1]);
+    return result;
+  }
+
   // Filter cameras to those within the route corridor.
   // Uses segment projection for precision, then verifies with direct haversine
   // to sampled route points as a safety net against projection edge cases.
@@ -499,11 +516,12 @@ const Cameras = (() => {
 
   // Sort cameras by their position along the route
   function sortByRoute(cameras, waypoints) {
-    return cameras.slice().sort((a, b) => {
-      const posA = routePosition(a.lat, a.lon, waypoints);
-      const posB = routePosition(b.lat, b.lon, waypoints);
-      return posA - posB;
-    });
+    // Pre-compute positions to avoid repeated O(segments) work per comparison
+    const posMap = new Map();
+    for (const cam of cameras) {
+      posMap.set(cam.id, routePosition(cam.lat, cam.lon, waypoints));
+    }
+    return cameras.slice().sort((a, b) => posMap.get(a.id) - posMap.get(b.id));
   }
 
   // Get subset of waypoints between two named stops
@@ -672,6 +690,7 @@ const Cameras = (() => {
     normalizeND,
     normalizeArcGIS,
     normalizeCA,
+    downsamplePolyline,
     filterByCorridor,
     sortByRoute,
     clusterCameras,

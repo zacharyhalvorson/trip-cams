@@ -12,6 +12,24 @@ const App = (() => {
   let currentWaypoints = [];
   let currentRouteGeometry = null; // Dense OSRM road geometry for precise filtering
   let _routeGeneration = 0; // Incremented on each route change to cancel stale loads
+
+  // Trailing-edge debounce that checks generation is still current before firing
+  function _debouncedApplyFilters(generation, delay) {
+    let timer = null;
+    return {
+      schedule() {
+        if (!timer) {
+          timer = setTimeout(() => {
+            timer = null;
+            if (generation === _routeGeneration) applyFilters();
+          }, delay);
+        }
+      },
+      flush() {
+        if (timer) { clearTimeout(timer); timer = null; }
+      }
+    };
+  }
   let fromStop = null;
   let toStop = null;
   let dropdownTarget = null; // 'from' or 'to'
@@ -684,7 +702,13 @@ const App = (() => {
     TripMap.drawRoute(currentWaypoints);
     TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
 
-    // Fetch precise OSRM road geometry for filtering
+    // For custom routes, start loading cameras immediately using straight-line
+    // region detection — don't wait for OSRM geometry
+    if (customRoute) {
+      loadCamerasForGeometry(generation);
+    }
+
+    // Fetch precise OSRM road geometry for filtering (in parallel with camera loading)
     TripMap.fetchRoadGeometry(currentWaypoints)
       .then(latlngs => {
         if (generation !== _routeGeneration) return; // Stale — route changed since
@@ -695,30 +719,34 @@ const App = (() => {
         // Re-filter with precise geometry and tight buffer
         _lastFilteredIds = '';
         applyFilters();
-
-        // For custom routes, detect regions from actual road geometry and load cameras
-        // This is the primary camera load for custom routes (not loadCameras)
-        if (customRoute) {
-          loadCamerasForGeometry(generation);
-        }
       })
       .catch(e => {
         if (generation !== _routeGeneration) return;
         console.warn('Could not fetch route geometry for filtering:', e.message);
-        // For custom routes, fall back to straight-line filtering
-        if (customRoute) {
-          loadCamerasForGeometry(generation);
-        }
       });
   }
 
-  // After OSRM geometry arrives for a custom route, detect regions and fetch cameras.
-  // This is the primary camera loading path for custom routes — cameras are filtered
-  // against the actual OSRM road geometry with a tight 2km buffer.
+  // Interpolate points along a straight line for rough region detection
+  // when OSRM geometry isn't available yet
+  function _interpolateWaypoints(waypoints, numPoints) {
+    if (waypoints.length >= numPoints) return waypoints;
+    const result = [];
+    const a = waypoints[0], b = waypoints[waypoints.length - 1];
+    for (let i = 0; i <= numPoints; i++) {
+      const t = i / numPoints;
+      result.push({ lat: a.lat + t * (b.lat - a.lat), lon: a.lon + t * (b.lon - a.lon) });
+    }
+    return result;
+  }
+
+  // Primary camera loading path for custom routes. Called immediately with
+  // straight-line waypoints, then OSRM geometry re-filters when it arrives.
   async function loadCamerasForGeometry(generation) {
     const filterPath = currentRouteGeometry || currentWaypoints;
     if (!filterPath || filterPath.length === 0) return;
-    const neededRegions = await API.getRegionsForRoute(filterPath);
+    // Interpolate sparse waypoints so region detection finds intermediate regions
+    const regionPath = filterPath.length < 10 ? _interpolateWaypoints(filterPath, 20) : filterPath;
+    const neededRegions = await API.getRegionsForRoute(regionPath);
     if (generation !== _routeGeneration) return; // Route changed while detecting regions
     if (neededRegions.size === 0) {
       dom.skeletonList.classList.add('hidden');
@@ -730,13 +758,15 @@ const App = (() => {
 
     // Fetch cameras for detected regions
     const freshCameras = [];
+    const debounce = _debouncedApplyFilters(generation, 150);
     await API.fetchProgressive((region, result) => {
       if (generation !== _routeGeneration) return; // Stale
       freshCameras.push(...(result.data || []));
       allCameras = freshCameras;
       _lastFilteredIds = ''; // Force re-filter with each new batch
-      applyFilters();
+      debounce.schedule();
     }, neededRegions);
+    debounce.flush();
 
     if (generation !== _routeGeneration) return; // Route changed during fetch
     if (freshCameras.length > 0) {
@@ -889,6 +919,7 @@ const App = (() => {
     const freshCameras = [];
     const hadCachedData = cachedCameras && cachedCameras.length > 0;
 
+    const debounce2 = _debouncedApplyFilters(generation, 150);
     await API.fetchProgressive((region, result) => {
       if (generation !== _routeGeneration) return; // Stale — route changed
       if (result.fromCache) anyFromCache = true;
@@ -896,9 +927,10 @@ const App = (() => {
       // Only re-render if we didn't have cached data, or if fresh data differs
       if (!hadCachedData) {
         allCameras = freshCameras;
-        applyFilters();
+        debounce2.schedule();
       }
     }, neededRegions.size > 0 ? neededRegions : null);
+    debounce2.flush();
 
     if (generation !== _routeGeneration) return; // Route changed during fetch
 
@@ -929,14 +961,18 @@ const App = (() => {
     const buffer = useGeometry ? 1
       : (currentWaypoints.length > 2 ? (routeData?.corridorBuffer || 25) : 5);
 
+    // Downsample dense OSRM geometry once — 0.5km spacing is plenty for 1km buffer
+    const reducedPath = filterPath.length > 0
+      ? Cameras.downsamplePolyline(filterPath, 0.5) : filterPath;
+
     // Filter by corridor
-    let cameras = filterPath.length > 0
-      ? Cameras.filterByCorridor(allCameras, filterPath, buffer)
+    let cameras = reducedPath.length > 0
+      ? Cameras.filterByCorridor(allCameras, reducedPath, buffer)
       : allCameras;
 
     // Sort by route order
-    if (filterPath.length > 0) {
-      cameras = Cameras.sortByRoute(cameras, filterPath);
+    if (reducedPath.length > 0) {
+      cameras = Cameras.sortByRoute(cameras, reducedPath);
     }
 
     // Skip re-render if the camera list hasn't changed

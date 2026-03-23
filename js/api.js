@@ -379,7 +379,7 @@ const API = (() => {
 
     if (regions.length === 0) return;
 
-    const BATCH_SIZE = 4;
+    const BATCH_SIZE = 8;
     for (let i = 0; i < regions.length; i += BATCH_SIZE) {
       const batch = regions.slice(i, i + BATCH_SIZE);
       const fetchers = batch.map(key =>
