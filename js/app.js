@@ -1709,9 +1709,17 @@ const App = (() => {
             ticks.forEach(t => { t.style.opacity = ''; });
             ptr.classList.add('spinning');
             isRefreshing = true;
+            const t0 = Date.now();
             doRefresh().then(() => {
-              isRefreshing = false;
-              ptr.classList.remove('loading', 'spinning');
+              // Keep spinner visible for at least 600ms so it doesn't just flash
+              const elapsed = Date.now() - t0;
+              const delay = Math.max(0, 600 - elapsed);
+              setTimeout(() => {
+                isRefreshing = false;
+                ptr.classList.remove('loading', 'spinning');
+                ptr.style.height = '';
+                ptr.style.opacity = '';
+              }, delay);
             });
           }
         }
@@ -1730,21 +1738,23 @@ const App = (() => {
 
     document.addEventListener('touchend', () => {
       if (!isPulling) return;
-
-      // Always snap the pull visual back
-      resetPull();
-
-      // If refresh is still in progress, show a non-intrusive floating spinner
-      if (isRefreshing) {
-        ptr.classList.add('loading');
-      }
-
       isPulling = false;
+
+      if (isRefreshing) {
+        // Transition from inline pull styles to the CSS loading state
+        ptr.classList.remove('pulling');
+        ptr.style.height = '';
+        ptr.style.opacity = '';
+        ptr.querySelectorAll('.ios-tick').forEach(t => { t.style.opacity = ''; });
+        ptr.classList.add('loading');
+      } else {
+        resetPull();
+      }
     }, { passive: true });
 
     function resetPull() {
       isPulling = false;
-      ptr.classList.remove('pulling');
+      ptr.classList.remove('pulling', 'spinning');
       ptr.style.height = '';
       ptr.style.opacity = '';
       ptr.querySelectorAll('.ios-tick').forEach(t => { t.style.opacity = ''; });
