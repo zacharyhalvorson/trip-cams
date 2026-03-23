@@ -702,7 +702,13 @@ const App = (() => {
     TripMap.drawRoute(currentWaypoints);
     TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
 
-    // Fetch precise OSRM road geometry for filtering
+    // For custom routes, start loading cameras immediately using straight-line
+    // region detection — don't wait for OSRM geometry
+    if (customRoute) {
+      loadCamerasForGeometry(generation);
+    }
+
+    // Fetch precise OSRM road geometry for filtering (in parallel with camera loading)
     TripMap.fetchRoadGeometry(currentWaypoints)
       .then(latlngs => {
         if (generation !== _routeGeneration) return; // Stale — route changed since
@@ -713,30 +719,34 @@ const App = (() => {
         // Re-filter with precise geometry and tight buffer
         _lastFilteredIds = '';
         applyFilters();
-
-        // For custom routes, detect regions from actual road geometry and load cameras
-        // This is the primary camera load for custom routes (not loadCameras)
-        if (customRoute) {
-          loadCamerasForGeometry(generation);
-        }
       })
       .catch(e => {
         if (generation !== _routeGeneration) return;
         console.warn('Could not fetch route geometry for filtering:', e.message);
-        // For custom routes, fall back to straight-line filtering
-        if (customRoute) {
-          loadCamerasForGeometry(generation);
-        }
       });
   }
 
-  // After OSRM geometry arrives for a custom route, detect regions and fetch cameras.
-  // This is the primary camera loading path for custom routes — cameras are filtered
-  // against the actual OSRM road geometry with a tight 2km buffer.
+  // Interpolate points along a straight line for rough region detection
+  // when OSRM geometry isn't available yet
+  function _interpolateWaypoints(waypoints, numPoints) {
+    if (waypoints.length >= numPoints) return waypoints;
+    const result = [];
+    const a = waypoints[0], b = waypoints[waypoints.length - 1];
+    for (let i = 0; i <= numPoints; i++) {
+      const t = i / numPoints;
+      result.push({ lat: a.lat + t * (b.lat - a.lat), lon: a.lon + t * (b.lon - a.lon) });
+    }
+    return result;
+  }
+
+  // Primary camera loading path for custom routes. Called immediately with
+  // straight-line waypoints, then OSRM geometry re-filters when it arrives.
   async function loadCamerasForGeometry(generation) {
     const filterPath = currentRouteGeometry || currentWaypoints;
     if (!filterPath || filterPath.length === 0) return;
-    const neededRegions = await API.getRegionsForRoute(filterPath);
+    // Interpolate sparse waypoints so region detection finds intermediate regions
+    const regionPath = filterPath.length < 10 ? _interpolateWaypoints(filterPath, 20) : filterPath;
+    const neededRegions = await API.getRegionsForRoute(regionPath);
     if (generation !== _routeGeneration) return; // Route changed while detecting regions
     if (neededRegions.size === 0) {
       dom.skeletonList.classList.add('hidden');
