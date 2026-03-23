@@ -471,7 +471,7 @@ button {
   top: var(--header-height);
   left: 0;
   right: 0;
-  height: calc(100dvh - var(--header-height));
+  bottom: 0;
   z-index: 1;
   transition: height var(--duration-slow) var(--spring);
 }

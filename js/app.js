@@ -341,8 +341,15 @@ const App = (() => {
     // Start camera loading immediately — no RAF delay
     loadCameras();
 
-    // Peek the bottom sheet immediately on mobile so there's no gap at the bottom
-    if (!isWideLayout()) peekSheet();
+    // If cameras take >3s to load (poor connectivity), peek the sheet with skeleton
+    if (!isWideLayout()) {
+      setTimeout(() => {
+        if (!sheetRevealed && !dom.sheet.classList.contains('peeking')) {
+          dom.skeletonList.classList.remove('hidden');
+          peekSheet();
+        }
+      }, 3000);
+    }
 
     // Pre-load region bounds for route detection
     API.loadRegionBounds();
