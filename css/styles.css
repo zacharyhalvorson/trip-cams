@@ -1151,6 +1151,14 @@ button {
   padding: 0;
 }
 
+.camera-list:has(.skeleton-list:not(.hidden)) .ptr {
+  display: none;
+}
+
+.ptr.loading ~ .skeleton-list {
+  display: none;
+}
+
 .skeleton-card {
   position: relative;
   margin-bottom: 10px;
