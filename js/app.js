@@ -1298,6 +1298,11 @@ const App = (() => {
     // Flatten for counting / empty check
     const totalCameras = clusters.reduce((n, cl) => n + cl.cameras.length, 0);
 
+    // Hide skeleton immediately so camera cards aren't pushed below the peek viewport
+    if (totalCameras > 0) {
+      dom.skeletonList.classList.add('hidden');
+    }
+
     if (totalCameras === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty-state';
