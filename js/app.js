@@ -730,13 +730,21 @@ const App = (() => {
 
     // Fetch cameras for detected regions
     const freshCameras = [];
+    let _filterTimer = null;
     await API.fetchProgressive((region, result) => {
       if (generation !== _routeGeneration) return; // Stale
       freshCameras.push(...(result.data || []));
       allCameras = freshCameras;
       _lastFilteredIds = ''; // Force re-filter with each new batch
-      applyFilters();
+      // Debounce: batch rapid region arrivals into a single applyFilters
+      if (!_filterTimer) {
+        _filterTimer = setTimeout(() => {
+          _filterTimer = null;
+          if (generation === _routeGeneration) applyFilters();
+        }, 150);
+      }
     }, neededRegions);
+    if (_filterTimer) { clearTimeout(_filterTimer); _filterTimer = null; }
 
     if (generation !== _routeGeneration) return; // Route changed during fetch
     if (freshCameras.length > 0) {
@@ -889,6 +897,7 @@ const App = (() => {
     const freshCameras = [];
     const hadCachedData = cachedCameras && cachedCameras.length > 0;
 
+    let _filterTimer2 = null;
     await API.fetchProgressive((region, result) => {
       if (generation !== _routeGeneration) return; // Stale — route changed
       if (result.fromCache) anyFromCache = true;
@@ -896,9 +905,16 @@ const App = (() => {
       // Only re-render if we didn't have cached data, or if fresh data differs
       if (!hadCachedData) {
         allCameras = freshCameras;
-        applyFilters();
+        // Debounce: batch rapid region arrivals into a single applyFilters
+        if (!_filterTimer2) {
+          _filterTimer2 = setTimeout(() => {
+            _filterTimer2 = null;
+            if (generation === _routeGeneration) applyFilters();
+          }, 150);
+        }
       }
     }, neededRegions.size > 0 ? neededRegions : null);
+    if (_filterTimer2) { clearTimeout(_filterTimer2); _filterTimer2 = null; }
 
     if (generation !== _routeGeneration) return; // Route changed during fetch
 

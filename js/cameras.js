@@ -456,21 +456,41 @@ const Cameras = (() => {
   // Filter cameras to those within the route corridor.
   // Uses segment projection for precision, then verifies with direct haversine
   // to sampled route points as a safety net against projection edge cases.
+  // Downsample a dense polyline to reduce segment count for filtering.
+  // Keeps every Nth point so that spacing is roughly `targetSpacingKm`.
+  // Always preserves first and last points.
+  function _downsamplePolyline(waypoints, targetSpacingKm) {
+    if (waypoints.length <= 100) return waypoints;
+    // Estimate total length using first/last and midpoint
+    const n = waypoints.length;
+    const totalKm = haversine(waypoints[0].lat, waypoints[0].lon,
+      waypoints[n - 1].lat, waypoints[n - 1].lon) * 1.3; // rough route factor
+    const avgSpacing = totalKm / n;
+    const step = Math.max(1, Math.round(targetSpacingKm / avgSpacing));
+    if (step <= 1) return waypoints;
+    const result = [];
+    for (let i = 0; i < n; i += step) result.push(waypoints[i]);
+    if (result[result.length - 1] !== waypoints[n - 1]) result.push(waypoints[n - 1]);
+    return result;
+  }
+
   function filterByCorridor(cameras, waypoints, bufferKm) {
-    const wpKey = getCorridorCacheKey(waypoints);
+    // Downsample dense OSRM geometry — ~0.5km spacing is plenty for 1km buffer
+    const filtered = _downsamplePolyline(waypoints, 0.5);
+    const wpKey = getCorridorCacheKey(filtered);
     if (_corridorCache.waypointKey !== wpKey) {
       _corridorCache = { waypointKey: wpKey, distances: new Map() };
     }
     const distCache = _corridorCache.distances;
 
     // Pre-sample route points for haversine verification
-    const verifySamples = _buildRouteSamples(waypoints, bufferKm);
+    const verifySamples = _buildRouteSamples(filtered, bufferKm);
 
     return cameras.filter(cam => {
       if (!isHighwayCamera(cam)) return false;
       let dist = distCache.get(cam.id);
       if (dist === undefined) {
-        dist = pointToPolylineDistance(cam.lat, cam.lon, waypoints);
+        dist = pointToPolylineDistance(cam.lat, cam.lon, filtered);
         distCache.set(cam.id, dist);
       }
       if (dist > bufferKm) return false;
@@ -499,11 +519,13 @@ const Cameras = (() => {
 
   // Sort cameras by their position along the route
   function sortByRoute(cameras, waypoints) {
-    return cameras.slice().sort((a, b) => {
-      const posA = routePosition(a.lat, a.lon, waypoints);
-      const posB = routePosition(b.lat, b.lon, waypoints);
-      return posA - posB;
-    });
+    // Downsample and pre-compute positions to avoid repeated O(segments) work
+    const sortPath = _downsamplePolyline(waypoints, 0.5);
+    const posMap = new Map();
+    for (const cam of cameras) {
+      posMap.set(cam.id, routePosition(cam.lat, cam.lon, sortPath));
+    }
+    return cameras.slice().sort((a, b) => posMap.get(a.id) - posMap.get(b.id));
   }
 
   // Get subset of waypoints between two named stops
