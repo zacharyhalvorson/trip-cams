@@ -756,11 +756,9 @@ const App = (() => {
     // Interpolate sparse waypoints so region detection finds intermediate regions
     const regionPath = filterPath.length < 10 ? _interpolateWaypoints(filterPath, 20) : filterPath;
 
-    // ── Instant render from cache while regions are detected ──
-    // Try all cached regions — applyFilters() will corridor-filter to only
-    // cameras near the route. This gives instant results before network.
+    // Show cached cameras instantly while region detection hits the network
     const cachedCameras = API.getCachedImmediate(null);
-    if (cachedCameras && cachedCameras.length > 0 && generation === _routeGeneration) {
+    if (cachedCameras && generation === _routeGeneration) {
       allCameras = cachedCameras;
       _lastFilteredIds = '';
       applyFilters();
@@ -936,7 +934,7 @@ const App = (() => {
 
     // ── Instant render from cache (synchronous, no network wait) ──
     const cachedCameras = API.getCachedImmediate(neededRegions.size > 0 ? neededRegions : null);
-    if (cachedCameras && cachedCameras.length > 0) {
+    if (cachedCameras) {
       allCameras = cachedCameras;
       applyFilters();
     } else {
