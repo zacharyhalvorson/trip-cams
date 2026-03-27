@@ -1339,6 +1339,7 @@ const App = (() => {
       }
     });
     dom.cameraList.appendChild(fragment);
+    dom.cameraList.scrollTop = 0;
 
     // Defer remaining cards to next frame so UI is interactive sooner
     if (restBatch.length > 0) {
@@ -1659,6 +1660,7 @@ const App = (() => {
     dom.sheet.classList.remove('peeking');
     dom.sheet.classList.add('revealed');
     document.body.classList.add('sheet-expanded');
+    dom.cameraList.scrollTop = 0;
     dom.cameraList.style.overflowY = '';
     TripMap.invalidateSize();
     // After sheet transition completes, animate map to show the first visible cameras
