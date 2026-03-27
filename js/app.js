@@ -1649,6 +1649,7 @@ const App = (() => {
     if (isWideLayout()) return;
     dom.sheet.classList.add('peeking');
     dom.sheet.classList.remove('revealed');
+    dom.cameraList.scrollTop = 0;
     dom.cameraList.style.overflowY = 'hidden';
   }
 
