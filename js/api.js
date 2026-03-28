@@ -357,7 +357,11 @@ const API = (() => {
   async function refreshRegion(region, endpoint) {
     try {
       const raw = await fetchWithRetry(endpoint);
-      setCachedData(region, raw);
+      // Only overwrite cache if API returned actual data
+      const normalizer = getNormalizer(region);
+      if (normalizer(raw).length > 0) {
+        setCachedData(region, raw);
+      }
     } catch (e) {
       // Silent fail — stale data remains in cache
     }
@@ -402,17 +406,22 @@ const API = (() => {
     // No cache at all — must fetch
     try {
       const raw = await fetchWithRetry(endpoint);
-      setCachedData(region, raw);
-      return { data: normalizer(raw), fromCache: false };
-    } catch (e) {
-      console.warn(`${region} API failed, using fallback:`, e.message);
-      const fallback = await fetchFallback(region);
-      if (fallback) {
-        setCachedData(region, fallback);
-        return { data: normalizer(fallback), fromCache: true };
+      const normalized = normalizer(raw);
+      if (normalized.length > 0) {
+        setCachedData(region, raw);
+        return { data: normalized, fromCache: false };
       }
-      return { data: [], fromCache: true, error: e.message };
+      // API returned empty data — fall through to fallback
+      console.warn(`${region} API returned empty data, trying fallback`);
+    } catch (e) {
+      console.warn(`${region} API failed, trying fallback:`, e.message);
     }
+    const fallback = await fetchFallback(region);
+    if (fallback) {
+      setCachedData(region, fallback);
+      return { data: normalizer(fallback), fromCache: true };
+    }
+    return { data: [], fromCache: true, error: 'All attempts failed' };
   }
 
   // Store route geometry for California district optimization
@@ -468,11 +477,17 @@ const API = (() => {
     // No cache — try direct then proxy
     const raw = await tryUrlsTwoPhase(urls);
     if (raw) {
-      setCachedData(region, raw);
-      return { data: normalizer(raw), fromCache: false };
+      const normalized = normalizer(raw);
+      if (normalized.length > 0) {
+        setCachedData(region, raw);
+        return { data: normalized, fromCache: false };
+      }
+      // API returned empty data — fall through to bundled fallback
+      console.warn(`${region} API returned empty data, trying fallback`);
+    } else {
+      console.warn(`${region} all API URLs failed, trying fallback`);
     }
-    // All URLs failed — try fallback file
-    console.warn(`${region} all API URLs failed, using fallback`);
+    // All URLs failed or returned empty — try fallback file
     const fallback = await fetchFallback(region);
     if (fallback) {
       setCachedData(region, fallback);
