@@ -2746,6 +2746,12 @@ const App = (() => {
       </div>
     `;
 
+    // Prevent scroll bleed-through to camera list underneath
+    panel.addEventListener('touchmove', (e) => {
+      // Allow scrolling inside the notif-list if it overflows
+      if (!e.target.closest('.notif-list')) e.preventDefault();
+    }, { passive: false });
+
     requestAnimationFrame(() => panel.classList.add('active'));
 
     panel.querySelector('#notifPanelClose').addEventListener('click', _closeNotificationsPanel);
