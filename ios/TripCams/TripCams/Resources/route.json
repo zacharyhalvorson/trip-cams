@@ -1,0 +1,81 @@
+{
+  "routes": {
+    "northern": {
+      "name": "Northern Route (Hwy 1 / Coquihalla)",
+      "stops": [
+        { "id": "calgary", "name": "Calgary", "region": "AB", "lat": 51.0447, "lon": -114.0719 },
+        { "id": "cochrane", "name": "Cochrane", "region": "AB", "lat": 51.1867, "lon": -114.4741 },
+        { "id": "canmore", "name": "Canmore", "region": "AB", "lat": 51.0884, "lon": -115.3579 },
+        { "id": "banff", "name": "Banff", "region": "AB", "lat": 51.1784, "lon": -115.5708 },
+        { "id": "lake-louise", "name": "Lake Louise", "region": "AB", "lat": 51.4254, "lon": -116.1773 },
+        { "id": "golden", "name": "Golden", "region": "BC", "lat": 51.2981, "lon": -116.9675 },
+        { "id": "revelstoke", "name": "Revelstoke", "region": "BC", "lat": 50.9981, "lon": -118.1957 },
+        { "id": "sicamous", "name": "Sicamous", "region": "BC", "lat": 50.8362, "lon": -118.9765 },
+        { "id": "salmon-arm", "name": "Salmon Arm", "region": "BC", "lat": 50.7022, "lon": -119.2722 },
+        { "id": "kamloops", "name": "Kamloops", "region": "BC", "lat": 50.6745, "lon": -120.3273 },
+        { "id": "merritt", "name": "Merritt", "region": "BC", "lat": 50.1113, "lon": -120.7862 },
+        { "id": "hope", "name": "Hope", "region": "BC", "lat": 49.3858, "lon": -121.4419 },
+        { "id": "chilliwack", "name": "Chilliwack", "region": "BC", "lat": 49.1579, "lon": -121.9514 },
+        { "id": "abbotsford", "name": "Abbotsford", "region": "BC", "lat": 49.0504, "lon": -122.3045 },
+        { "id": "surrey", "name": "Surrey", "region": "BC", "lat": 49.1913, "lon": -122.8490 },
+        { "id": "vancouver", "name": "Vancouver", "region": "BC", "lat": 49.2827, "lon": -123.1207 },
+        { "id": "blaine", "name": "Blaine", "region": "WA", "lat": 48.9937, "lon": -122.7474 },
+        { "id": "bellingham", "name": "Bellingham", "region": "WA", "lat": 48.7519, "lon": -122.4787 },
+        { "id": "mount-vernon", "name": "Mount Vernon", "region": "WA", "lat": 48.4213, "lon": -122.3343 },
+        { "id": "marysville", "name": "Marysville", "region": "WA", "lat": 48.0523, "lon": -122.1771 },
+        { "id": "everett", "name": "Everett", "region": "WA", "lat": 47.9790, "lon": -122.2021 },
+        { "id": "seattle", "name": "Seattle", "region": "WA", "lat": 47.6062, "lon": -122.3321 }
+      ]
+    },
+    "southern": {
+      "name": "Southern Route (Hwy 3 / Crowsnest)",
+      "stops": [
+        { "id": "calgary", "name": "Calgary", "region": "AB", "lat": 51.0447, "lon": -114.0719 },
+        { "id": "okotoks", "name": "Okotoks", "region": "AB", "lat": 50.7286, "lon": -113.9749 },
+        { "id": "nanton", "name": "Nanton", "region": "AB", "lat": 50.3517, "lon": -113.7730 },
+        { "id": "fort-macleod", "name": "Fort Macleod", "region": "AB", "lat": 49.7236, "lon": -113.4049 },
+        { "id": "crowsnest-pass", "name": "Crowsnest Pass", "region": "AB", "lat": 49.5958, "lon": -114.4128 },
+        { "id": "sparwood", "name": "Sparwood", "region": "BC", "lat": 49.7330, "lon": -114.8862 },
+        { "id": "fernie", "name": "Fernie", "region": "BC", "lat": 49.5040, "lon": -115.0631 },
+        { "id": "kimberley", "name": "Kimberley", "region": "BC", "lat": 49.6698, "lon": -115.9774 },
+        { "id": "cranbrook", "name": "Cranbrook", "region": "BC", "lat": 49.5097, "lon": -115.7693 },
+        { "id": "creston", "name": "Creston", "region": "BC", "lat": 49.0955, "lon": -116.5137 },
+        { "id": "salmo", "name": "Salmo", "region": "BC", "lat": 49.1933, "lon": -117.2714 },
+        { "id": "nelson", "name": "Nelson", "region": "BC", "lat": 49.4928, "lon": -117.2948 },
+        { "id": "trail", "name": "Trail", "region": "BC", "lat": 49.0952, "lon": -117.7108 },
+        { "id": "castlegar", "name": "Castlegar", "region": "BC", "lat": 49.3263, "lon": -117.6593 },
+        { "id": "vernon", "name": "Vernon", "region": "BC", "lat": 50.2671, "lon": -119.2720 },
+        { "id": "kelowna", "name": "Kelowna", "region": "BC", "lat": 49.8880, "lon": -119.4960 },
+        { "id": "peachland", "name": "Peachland", "region": "BC", "lat": 49.7746, "lon": -119.7356 },
+        { "id": "summerland", "name": "Summerland", "region": "BC", "lat": 49.6004, "lon": -119.6545 },
+        { "id": "penticton", "name": "Penticton", "region": "BC", "lat": 49.4991, "lon": -119.5937 },
+        { "id": "oliver", "name": "Oliver", "region": "BC", "lat": 49.1828, "lon": -119.5505 },
+        { "id": "osoyoos", "name": "Osoyoos", "region": "BC", "lat": 49.0329, "lon": -119.4691 },
+        { "id": "keremeos", "name": "Keremeos", "region": "BC", "lat": 49.2024, "lon": -119.8292 },
+        { "id": "princeton", "name": "Princeton", "region": "BC", "lat": 49.4586, "lon": -120.5064 },
+        { "id": "hope", "name": "Hope", "region": "BC", "lat": 49.3858, "lon": -121.4419 },
+        { "id": "chilliwack", "name": "Chilliwack", "region": "BC", "lat": 49.1579, "lon": -121.9514 },
+        { "id": "abbotsford", "name": "Abbotsford", "region": "BC", "lat": 49.0504, "lon": -122.3045 },
+        { "id": "surrey", "name": "Surrey", "region": "BC", "lat": 49.1913, "lon": -122.8490 },
+        { "id": "vancouver", "name": "Vancouver", "region": "BC", "lat": 49.2827, "lon": -123.1207 },
+        { "id": "blaine", "name": "Blaine", "region": "WA", "lat": 48.9937, "lon": -122.7474 },
+        { "id": "bellingham", "name": "Bellingham", "region": "WA", "lat": 48.7519, "lon": -122.4787 },
+        { "id": "mount-vernon", "name": "Mount Vernon", "region": "WA", "lat": 48.4213, "lon": -122.3343 },
+        { "id": "marysville", "name": "Marysville", "region": "WA", "lat": 48.0523, "lon": -122.1771 },
+        { "id": "everett", "name": "Everett", "region": "WA", "lat": 47.9790, "lon": -122.2021 },
+        { "id": "seattle", "name": "Seattle", "region": "WA", "lat": 47.6062, "lon": -122.3321 }
+      ]
+    },
+    "lethbridge": {
+      "name": "Lethbridge Spur (Hwy 2 / Hwy 3 East)",
+      "stops": [
+        { "id": "calgary", "name": "Calgary", "region": "AB", "lat": 51.0447, "lon": -114.0719 },
+        { "id": "okotoks", "name": "Okotoks", "region": "AB", "lat": 50.7286, "lon": -113.9749 },
+        { "id": "nanton", "name": "Nanton", "region": "AB", "lat": 50.3517, "lon": -113.7730 },
+        { "id": "fort-macleod", "name": "Fort Macleod", "region": "AB", "lat": 49.7236, "lon": -113.4049 },
+        { "id": "lethbridge", "name": "Lethbridge", "region": "AB", "lat": 49.6935, "lon": -112.8418 }
+      ]
+    }
+  },
+  "corridorBuffer": 25
+}
