@@ -62,6 +62,114 @@ const API = (() => {
     CA: { url: null, norm: 'normalizeCA', country: 'US', multiDistrict: true },
   };
 
+  // ── Incident / Event API Registry ──────────────────────────────
+  // IBI 511 platforms expose /api/v2/get/event with the same auth pattern.
+  // Other sources use their own formats.
+  const INCIDENT_REGISTRY = {
+    // Canada — IBI 511
+    AB: { url: 'https://511.alberta.ca/api/v2/get/event' },
+    SK: { url: 'https://hotline.gov.sk.ca/api/v2/get/event' },
+    MB: { url: 'https://www.manitoba511.ca/api/v2/get/event' },
+    ON: { url: 'https://511on.ca/api/v2/get/event' },
+    NB: { url: 'https://511.gnb.ca/api/v2/get/event' },
+    NS: { url: 'https://511.novascotia.ca/api/v2/get/event' },
+    PE: { url: 'https://511.gov.pe.ca/api/v2/get/event' },
+    NL: { url: 'https://511nl.ca/api/v2/get/event' },
+    YT: { url: 'https://511yukon.ca/api/v2/get/event' },
+    // Canada — DriveBC
+    BC: { url: 'https://www.drivebc.ca/api/events/' },
+    // US — IBI 511
+    NY: { url: 'https://511ny.org/api/v2/get/event' },
+    GA: { url: 'https://511ga.org/api/v2/get/event' },
+    WI: { url: 'https://511wi.gov/api/v2/get/event' },
+    LA: { url: 'https://511la.org/api/v2/get/event' },
+    AZ: { url: 'https://az511.com/api/v2/get/event' },
+    ID: { url: 'https://511.idaho.gov/api/v2/get/event' },
+    AK: { url: 'https://511.alaska.gov/api/v2/get/event' },
+    UT: { url: 'https://udottraffic.utah.gov/api/v2/get/event' },
+    NV: { url: 'https://nvroads.com/api/v2/get/event' },
+    CT: { url: 'https://ctroads.com/api/v2/get/event' },
+    // US — WSDOT
+    WA: { url: 'https://data.wsdot.wa.gov/mobile/HighwayAlerts.json' },
+  };
+
+  // Normalize IBI 511 event response into a flat incident array
+  function normalizeIBIEvents(data, region) {
+    if (!data) return [];
+    const events = Array.isArray(data) ? data : (data.body || data.events || data.data || []);
+    return events.filter(e => e && e.Latitude && e.Longitude).map(e => ({
+      id: `${region}-evt-${e.Id || e.id || e.ID || Math.random().toString(36).slice(2)}`,
+      region,
+      lat: parseFloat(e.Latitude || e.latitude),
+      lon: parseFloat(e.Longitude || e.longitude),
+      title: e.Headline || e.EventType || e.headline || 'Incident',
+      description: e.Description || e.EventSubType || e.description || '',
+      severity: (e.Severity || e.severity || '').toLowerCase(),
+      road: e.RoadwayName || e.Roads || e.roadway || '',
+      startTime: e.StartDate || e.StartTime || e.startDate || null,
+      lastUpdated: e.LastUpdated || e.lastUpdated || null,
+    }));
+  }
+
+  // Normalize DriveBC events
+  function normalizeBCEvents(data) {
+    if (!data) return [];
+    const events = Array.isArray(data) ? data : (data.events || []);
+    return events.filter(e => e && e.latitude && e.longitude).map(e => ({
+      id: `BC-evt-${e.id || Math.random().toString(36).slice(2)}`,
+      region: 'BC',
+      lat: parseFloat(e.latitude),
+      lon: parseFloat(e.longitude),
+      title: e.headline || e.event_type || 'Incident',
+      description: e.description || '',
+      severity: (e.severity || '').toLowerCase(),
+      road: e.route || e.highway || '',
+      startTime: e.start || null,
+      lastUpdated: e.last_updated || null,
+    }));
+  }
+
+  // Normalize WSDOT alerts
+  function normalizeWAEvents(data) {
+    if (!data) return [];
+    const alerts = Array.isArray(data) ? data : [];
+    return alerts.filter(a => a && a.StartPoint && a.StartPoint.Latitude).map(a => ({
+      id: `WA-evt-${a.AlertID || Math.random().toString(36).slice(2)}`,
+      region: 'WA',
+      lat: parseFloat(a.StartPoint.Latitude),
+      lon: parseFloat(a.StartPoint.Longitude),
+      title: a.HeadlineDescription || a.EventCategory || 'Alert',
+      description: a.ExtendedDescription || '',
+      severity: (a.Priority || '').toLowerCase(),
+      road: a.Region || '',
+      startTime: a.StartTime || null,
+      lastUpdated: a.LastUpdatedTime || null,
+    }));
+  }
+
+  // Fetch incidents for a set of regions, returns flat array of normalized incidents
+  async function fetchIncidents(regions) {
+    const regionList = regions ? [...regions] : [];
+    const incidents = [];
+
+    await Promise.allSettled(regionList.map(async (region) => {
+      const entry = INCIDENT_REGISTRY[region];
+      if (!entry) return;
+      try {
+        const raw = await fetchWithRetry(entry.url);
+        let normalized;
+        if (region === 'BC') normalized = normalizeBCEvents(raw);
+        else if (region === 'WA') normalized = normalizeWAEvents(raw);
+        else normalized = normalizeIBIEvents(raw, region);
+        incidents.push(...normalized);
+      } catch (e) {
+        // Silent fail — no incidents for this region
+      }
+    }));
+
+    return incidents;
+  }
+
   // California district endpoints and their approximate bounding boxes
   const CA_DISTRICTS = [
     { id: 1, url: 'https://cwwp2.dot.ca.gov/data/d1/cctv/cctvStatusD01.json', lat: [38.5, 42.0], lon: [-124.4, -122.0] },
@@ -727,6 +835,8 @@ const API = (() => {
     fetchGeocodeFallback,
     reverseGeocode,
     setRouteGeometry,
+    fetchIncidents,
     CAMERA_REGISTRY,
+    INCIDENT_REGISTRY,
   };
 })();

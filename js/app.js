@@ -383,6 +383,12 @@ const App = (() => {
 
     // Pre-load region bounds for route detection
     API.loadRegionBounds();
+
+    // Handle incident hash (from notification click opening new window)
+    _handleIncidentHash();
+
+    // Enable incident notifications after route is ready
+    _enableIncidentNotifications();
   }
 
   function bindEvents() {
@@ -418,8 +424,9 @@ const App = (() => {
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
 
-    // Browser back/forward for camera hash
+    // Browser back/forward for camera hash + incident hash
     window.addEventListener('popstate', () => {
+      _handleIncidentHash();
       const camId = _getCameraIdFromHash();
       if (camId && !dom.modalOverlay.classList.contains('active')) {
         _openCameraFromHash();
@@ -699,6 +706,10 @@ const App = (() => {
 
     const customRoute = _isCustomRoute();
     const generation = ++_routeGeneration; // Cancel any in-flight loads from previous route
+
+    // Reset seen incidents for new route so user gets fresh notifications
+    _seenIncidentIds.clear();
+    _saveSeenIncidents();
 
     if (customRoute || !routeData) {
       // Custom locations: just use origin + destination, OSRM provides the path
@@ -2413,6 +2424,206 @@ const App = (() => {
       navigator.serviceWorker.register('sw.js').catch(err => {
         console.warn('SW registration failed:', err);
       });
+
+      // Listen for notification click messages from service worker
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'NAVIGATE_INCIDENT') {
+          _navigateToIncident(event.data.lat, event.data.lon, event.data.zoom);
+        }
+      });
+    }
+  }
+
+  // ── Incident Notifications ──────────────────────────────────
+
+  const INCIDENT_POLL_INTERVAL = 3 * 60 * 1000; // 3 minutes
+  const INCIDENT_CORRIDOR_BUFFER = 5; // km — wider than camera corridor for incidents
+  const SEEN_INCIDENTS_KEY = 'tripcams_seen_incidents';
+  let _incidentPollTimer = null;
+  let _seenIncidentIds = new Set();
+  let _notificationsEnabled = false;
+
+  function _loadSeenIncidents() {
+    try {
+      const stored = localStorage.getItem(SEEN_INCIDENTS_KEY);
+      if (stored) _seenIncidentIds = new Set(JSON.parse(stored));
+    } catch (e) { /* ignore */ }
+  }
+
+  function _saveSeenIncidents() {
+    try {
+      // Keep only the last 500 to avoid unbounded growth
+      const arr = [..._seenIncidentIds];
+      if (arr.length > 500) arr.splice(0, arr.length - 500);
+      localStorage.setItem(SEEN_INCIDENTS_KEY, JSON.stringify(arr));
+    } catch (e) { /* ignore */ }
+  }
+
+  // Request notification permission after user interaction (route selection)
+  async function _requestNotificationPermission() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    const result = await Notification.requestPermission();
+    return result === 'granted';
+  }
+
+  // Start polling for incidents along the current route
+  function _startIncidentPolling() {
+    if (_incidentPollTimer) return;
+    _loadSeenIncidents();
+
+    // Initial fetch after a short delay (let cameras load first)
+    setTimeout(() => _pollIncidents(), 5000);
+
+    _incidentPollTimer = setInterval(_pollIncidents, INCIDENT_POLL_INTERVAL);
+
+    // Pause polling when tab is hidden, resume when visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        _pollIncidents();
+      }
+    });
+  }
+
+  function _stopIncidentPolling() {
+    if (_incidentPollTimer) {
+      clearInterval(_incidentPollTimer);
+      _incidentPollTimer = null;
+    }
+  }
+
+  async function _pollIncidents() {
+    if (!_notificationsEnabled) return;
+    if (!fromStop || !toStop) return;
+
+    // Determine which regions to check
+    const neededRegions = new Set();
+    if (fromStop?.region && API.INCIDENT_REGISTRY[fromStop.region]) {
+      neededRegions.add(fromStop.region);
+    }
+    if (toStop?.region && API.INCIDENT_REGISTRY[toStop.region]) {
+      neededRegions.add(toStop.region);
+    }
+    // Also add regions from waypoints
+    if (currentWaypoints.length > 0) {
+      for (const wp of currentWaypoints) {
+        if (wp.region && API.INCIDENT_REGISTRY[wp.region]) neededRegions.add(wp.region);
+      }
+    }
+    // If we have OSRM geometry, detect regions from it
+    if (currentRouteGeometry && currentRouteGeometry.length > 0) {
+      try {
+        const geoRegions = await API.getRegionsForRoute(currentRouteGeometry);
+        for (const r of geoRegions) {
+          if (API.INCIDENT_REGISTRY[r]) neededRegions.add(r);
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    if (neededRegions.size === 0) return;
+
+    try {
+      const incidents = await API.fetchIncidents(neededRegions);
+      _processIncidents(incidents);
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  function _processIncidents(incidents) {
+    if (!incidents || incidents.length === 0) return;
+
+    // Filter to incidents within the route corridor
+    const filterPath = currentRouteGeometry || currentWaypoints;
+    if (!filterPath || filterPath.length === 0) return;
+
+    const reducedPath = filterPath.length > 0
+      ? Cameras.downsamplePolyline(filterPath, 0.5) : filterPath;
+
+    const corridorIncidents = incidents.filter(inc => {
+      if (!inc.lat || !inc.lon || isNaN(inc.lat) || isNaN(inc.lon)) return false;
+      const dist = Cameras.pointToPolylineDistance(inc.lat, inc.lon, reducedPath);
+      return dist <= INCIDENT_CORRIDOR_BUFFER;
+    });
+
+    // Find new incidents we haven't notified about
+    const newIncidents = corridorIncidents.filter(inc => !_seenIncidentIds.has(inc.id));
+
+    for (const inc of newIncidents) {
+      _seenIncidentIds.add(inc.id);
+      _showIncidentNotification(inc);
+    }
+
+    if (newIncidents.length > 0) _saveSeenIncidents();
+  }
+
+  async function _showIncidentNotification(incident) {
+    const reg = await navigator.serviceWorker?.ready;
+    if (!reg) return;
+
+    const title = incident.road
+      ? `${incident.title} — ${incident.road}`
+      : incident.title;
+
+    reg.active.postMessage({
+      type: 'SHOW_NOTIFICATION',
+      title: title,
+      body: incident.description || 'Tap to view on map',
+      tag: incident.id,
+      lat: incident.lat,
+      lon: incident.lon,
+      zoom: 14,
+    });
+  }
+
+  // Navigate map to an incident location (called from notification click or hash)
+  function _navigateToIncident(lat, lon, zoom) {
+    if (!lat || !lon) return;
+    TripMap.panTo(parseFloat(lat), parseFloat(lon), parseInt(zoom) || 13);
+    // On mobile, reveal the map
+    if (!isWideLayout()) {
+      document.body.classList.remove('sheet-expanded');
+      dom.sheet.classList.remove('revealed');
+      dom.sheet.classList.add('peeking');
+    }
+  }
+
+  // Parse incident location from URL hash: #incident=lat,lon,zoom
+  function _handleIncidentHash() {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const params = new URLSearchParams(hash);
+    const incident = params.get('incident');
+    if (!incident) return;
+    const parts = incident.split(',');
+    if (parts.length >= 2) {
+      const lat = parseFloat(parts[0]);
+      const lon = parseFloat(parts[1]);
+      const zoom = parts.length >= 3 ? parseInt(parts[2]) : 13;
+      if (!isNaN(lat) && !isNaN(lon)) {
+        // Delay slightly to let map initialize
+        setTimeout(() => _navigateToIncident(lat, lon, zoom), 500);
+        // Clean the incident param from hash
+        params.delete('incident');
+        const remaining = params.toString();
+        window.location.hash = remaining || '';
+      }
+    }
+  }
+
+  // Enable notifications — called after first route loads
+  async function _enableIncidentNotifications() {
+    if (_notificationsEnabled) return;
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+    // Only ask for permission if user hasn't denied
+    if (Notification.permission === 'denied') return;
+
+    const granted = await _requestNotificationPermission();
+    if (granted) {
+      _notificationsEnabled = true;
+      _startIncidentPolling();
     }
   }
 

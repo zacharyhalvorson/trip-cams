@@ -703,6 +703,7 @@ const Cameras = (() => {
     normalizeND,
     normalizeArcGIS,
     normalizeCA,
+    pointToPolylineDistance,
     downsamplePolyline,
     filterByCorridor,
     sortByRoute,
