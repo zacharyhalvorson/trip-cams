@@ -276,7 +276,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
-    showIncidentNotification(event.data);
+    event.waitUntil(showIncidentNotification(event.data));
   }
 });
 

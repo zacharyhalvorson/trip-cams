@@ -417,12 +417,14 @@ const App = (() => {
         if (!_swapDidLongPress) swapStops();
       }
     });
-    dom.swapBtn.addEventListener('pointerleave', () => {
+    const _cancelLongPress = () => {
       if (_swapLongPressTimer) {
         clearTimeout(_swapLongPressTimer);
         _swapLongPressTimer = null;
       }
-    });
+    };
+    dom.swapBtn.addEventListener('pointerleave', _cancelLongPress);
+    dom.swapBtn.addEventListener('pointercancel', _cancelLongPress);
     dom.swapBtn.addEventListener('click', (e) => {
       if (_swapDidLongPress) e.preventDefault();
     });
@@ -693,7 +695,6 @@ const App = (() => {
     loadCameras();
     updateHash();
     savePrefs();
-    _promptIncidentNotifications();
   }
 
   function swapStops() {
@@ -1102,13 +1103,20 @@ const App = (() => {
     cards.forEach(c => c.remove());
   }
 
-  function formatTimeSince(dateStr, nowMs) {
-    if (!dateStr) return '';
-    const ts = new Date(dateStr).getTime();
+  function formatTimeSince(dateStr, nowMs, compact) {
+    if (!dateStr && !compact) return '';
+    const ts = typeof dateStr === 'number' ? dateStr : new Date(dateStr).getTime();
     if (Number.isNaN(ts)) return '';
-    const diffMs = nowMs - ts;
+    const diffMs = (nowMs || Date.now()) - ts;
     if (diffMs < 0) return '';
     const mins = Math.floor(diffMs / 60000);
+    if (compact) {
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      return `${Math.floor(hours / 24)}d ago`;
+    }
     if (mins < 1) return 'Just now';
     if (mins < 60) return mins === 1 ? '1 minute ago' : `${mins} minutes ago`;
     const hours = Math.floor(mins / 60);
@@ -2587,7 +2595,7 @@ const App = (() => {
     if (_notificationHistory.length > 50) _notificationHistory.length = 50;
 
     const reg = await navigator.serviceWorker?.ready;
-    if (!reg) return;
+    if (!reg?.active) return;
 
     reg.active.postMessage({
       type: 'SHOW_NOTIFICATION',
@@ -2645,9 +2653,6 @@ const App = (() => {
     }
   }
 
-  // No longer auto-prompt from route selection — user opts in via the toggle
-  function _promptIncidentNotifications() {}
-
   function _setNotificationsEnabled(enabled) {
     try { localStorage.setItem(NOTIF_ENABLED_KEY, enabled ? 'true' : 'false'); } catch (e) { /* ignore */ }
     const toggle = document.getElementById('notifToggle');
@@ -2661,7 +2666,6 @@ const App = (() => {
       return;
     }
 
-    // Enabling: check permission state
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       if (toggle) toggle.checked = false;
       return;
@@ -2708,9 +2712,9 @@ const App = (() => {
 
     const items = _notificationHistory.length > 0
       ? _notificationHistory.map(inc => {
-          const time = _relativeTime(inc.notifiedAt);
+          const time = formatTimeSince(inc.notifiedAt, Date.now(), true);
           const title = inc.road ? `${inc.title} — ${inc.road}` : inc.title;
-          return `<button class="notif-item" data-lat="${inc.lat}" data-lon="${inc.lon}">
+          return `<button class="notif-item" data-lat="${Number(inc.lat)}" data-lon="${Number(inc.lon)}">
             <div class="notif-item-title">${_esc(title)}</div>
             ${inc.description ? `<div class="notif-item-desc">${_esc(inc.description)}</div>` : ''}
             <div class="notif-item-time">${time}</div>
@@ -2742,10 +2746,8 @@ const App = (() => {
       </div>
     `;
 
-    // Animate in
     requestAnimationFrame(() => panel.classList.add('active'));
 
-    // Event listeners
     panel.querySelector('#notifPanelClose').addEventListener('click', _closeNotificationsPanel);
     panel.addEventListener('click', (e) => {
       if (e.target === panel) _closeNotificationsPanel();
@@ -2756,7 +2758,6 @@ const App = (() => {
       toggle.addEventListener('change', () => _setNotificationsEnabled(toggle.checked));
     }
 
-    // Incident item clicks → navigate to location
     panel.querySelectorAll('.notif-item').forEach(item => {
       item.addEventListener('click', () => {
         const lat = parseFloat(item.dataset.lat);
@@ -2773,21 +2774,15 @@ const App = (() => {
     const panel = document.getElementById('notifPanel');
     if (!panel) return;
     panel.classList.remove('active');
-    panel.addEventListener('transitionend', () => panel.remove(), { once: true });
+    const remove = () => { if (panel.parentNode) panel.remove(); };
+    panel.addEventListener('transitionend', remove, { once: true });
+    setTimeout(remove, 400);
   }
 
-  function _relativeTime(ts) {
-    const diff = Date.now() - ts;
-    if (diff < 60000) return 'just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return `${Math.floor(diff / 86400000)}d ago`;
-  }
-
+  const _escEl = document.createElement('div');
   function _esc(str) {
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
+    _escEl.textContent = str;
+    return _escEl.innerHTML;
   }
 
   // ── Boot ─────────────────────────────────────────────────────
