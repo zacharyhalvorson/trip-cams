@@ -707,9 +707,9 @@ const App = (() => {
     const customRoute = _isCustomRoute();
     const generation = ++_routeGeneration; // Cancel any in-flight loads from previous route
 
-    // Reset seen incidents for new route so user gets fresh notifications
-    _seenIncidentIds.clear();
-    _saveSeenIncidents();
+    // Reset incident baseline for new route — next poll will seed the
+    // seen set with current incidents, then only notify about new ones
+    _clearSeenIncidents();
 
     if (customRoute || !routeData) {
       // Custom locations: just use origin + destination, OSRM provides the path
@@ -2437,26 +2437,18 @@ const App = (() => {
   // ── Incident Notifications ──────────────────────────────────
 
   const INCIDENT_POLL_INTERVAL = 3 * 60 * 1000; // 3 minutes
-  const INCIDENT_CORRIDOR_BUFFER = 5; // km — wider than camera corridor for incidents
-  const SEEN_INCIDENTS_KEY = 'tripcams_seen_incidents';
+  // Use same tight corridor as cameras when OSRM geometry is available (1km),
+  // wider fallback (3km) for straight-line 2-waypoint routes
+  const INCIDENT_CORRIDOR_BUFFER_GEOMETRY = 1; // km — OSRM road geometry
+  const INCIDENT_CORRIDOR_BUFFER_STRAIGHT = 3; // km — straight-line fallback
   let _incidentPollTimer = null;
-  let _seenIncidentIds = new Set();
+  let _seenIncidentIds = new Set(); // Session-only — no localStorage persistence
   let _notificationsEnabled = false;
+  let _incidentBaselineLoaded = false; // true after first poll seeds the seen set
 
-  function _loadSeenIncidents() {
-    try {
-      const stored = localStorage.getItem(SEEN_INCIDENTS_KEY);
-      if (stored) _seenIncidentIds = new Set(JSON.parse(stored));
-    } catch (e) { /* ignore */ }
-  }
-
-  function _saveSeenIncidents() {
-    try {
-      // Keep only the last 500 to avoid unbounded growth
-      const arr = [..._seenIncidentIds];
-      if (arr.length > 500) arr.splice(0, arr.length - 500);
-      localStorage.setItem(SEEN_INCIDENTS_KEY, JSON.stringify(arr));
-    } catch (e) { /* ignore */ }
+  function _clearSeenIncidents() {
+    _seenIncidentIds = new Set();
+    _incidentBaselineLoaded = false;
   }
 
   // Request notification permission after user interaction (route selection)
@@ -2471,7 +2463,6 @@ const App = (() => {
   // Start polling for incidents along the current route
   function _startIncidentPolling() {
     if (_incidentPollTimer) return;
-    _loadSeenIncidents();
 
     // Initial fetch after a short delay (let cameras load first)
     setTimeout(() => _pollIncidents(), 5000);
@@ -2534,28 +2525,42 @@ const App = (() => {
   function _processIncidents(incidents) {
     if (!incidents || incidents.length === 0) return;
 
-    // Filter to incidents within the route corridor
-    const filterPath = currentRouteGeometry || currentWaypoints;
+    // Filter to incidents within the route corridor using the same
+    // tight buffer as cameras when OSRM geometry is available
+    const useGeometry = currentRouteGeometry && currentRouteGeometry.length > 0;
+    const filterPath = useGeometry ? currentRouteGeometry : currentWaypoints;
     if (!filterPath || filterPath.length === 0) return;
 
-    const reducedPath = filterPath.length > 0
-      ? Cameras.downsamplePolyline(filterPath, 0.5) : filterPath;
+    const buffer = useGeometry
+      ? INCIDENT_CORRIDOR_BUFFER_GEOMETRY
+      : INCIDENT_CORRIDOR_BUFFER_STRAIGHT;
+
+    const reducedPath = Cameras.downsamplePolyline(filterPath, 0.5);
 
     const corridorIncidents = incidents.filter(inc => {
       if (!inc.lat || !inc.lon || isNaN(inc.lat) || isNaN(inc.lon)) return false;
       const dist = Cameras.pointToPolylineDistance(inc.lat, inc.lon, reducedPath);
-      return dist <= INCIDENT_CORRIDOR_BUFFER;
+      return dist <= buffer;
     });
 
-    // Find new incidents we haven't notified about
+    if (!_incidentBaselineLoaded) {
+      // First poll: seed the seen set with all current incidents.
+      // Don't notify — the user doesn't need a dump of every existing incident
+      // when they first open the route. Only notify about *new* ones from now on.
+      for (const inc of corridorIncidents) {
+        _seenIncidentIds.add(inc.id);
+      }
+      _incidentBaselineLoaded = true;
+      return;
+    }
+
+    // Find genuinely new incidents since last poll
     const newIncidents = corridorIncidents.filter(inc => !_seenIncidentIds.has(inc.id));
 
     for (const inc of newIncidents) {
       _seenIncidentIds.add(inc.id);
       _showIncidentNotification(inc);
     }
-
-    if (newIncidents.length > 0) _saveSeenIncidents();
   }
 
   async function _showIncidentNotification(incident) {
