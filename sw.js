@@ -2,7 +2,7 @@
    sw.js — Service Worker with tiered caching strategies
    ============================================================= */
 
-const CACHE_NAME = 'tripcams-v26';
+const CACHE_NAME = 'tripcams-v27';
 const STATIC_ASSETS = [
   './',
   'index.html',

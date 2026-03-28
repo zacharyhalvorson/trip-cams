@@ -110,6 +110,7 @@ const Cameras = (() => {
           status: (view.Status || '').toLowerCase() === 'disabled' ? 'inactive' : 'active',
           direction: cam.Direction || view.Description || '',
           lastUpdated: view.LastUpdated || null,
+          temperature: cam.Temperature ?? null,
         });
       }
       if (views.length === 0) {
@@ -124,6 +125,7 @@ const Cameras = (() => {
           status: 'inactive',
           direction: cam.Direction || '',
           lastUpdated: null,
+          temperature: cam.Temperature ?? null,
         });
       }
     }
@@ -161,6 +163,7 @@ const Cameras = (() => {
           status: cam.is_on ? 'active' : 'inactive',
           direction: cam.orientation || '',
           lastUpdated: cam.last_update_modified || null,
+          temperature: cam.temperature ?? cam.currentWeather?.temperature ?? null,
         };
       });
   }
@@ -186,6 +189,7 @@ const Cameras = (() => {
           status: cam.IsActive !== false ? 'active' : 'inactive',
           direction: cam.CameraLocation?.Direction || '',
           lastUpdated: null,
+          temperature: cam.Temperature ?? cam.CurrentTemperature ?? null,
         }));
     }
     // ArcGIS format fallback
@@ -207,6 +211,7 @@ const Cameras = (() => {
         status: 'active',
         direction: cam.direction || '',
         lastUpdated: null,
+        temperature: cam.temperature ?? cam.temp ?? null,
       }));
   }
 
@@ -230,6 +235,7 @@ const Cameras = (() => {
           status: (view.Status || '').toLowerCase() === 'disabled' ? 'inactive' : 'active',
           direction: cam.Direction || view.Description || '',
           lastUpdated: view.LastUpdated || null,
+          temperature: cam.Temperature ?? null,
         });
       }
       if (views.length === 0) {
@@ -244,6 +250,7 @@ const Cameras = (() => {
           status: 'inactive',
           direction: cam.Direction || '',
           lastUpdated: null,
+          temperature: cam.Temperature ?? null,
         });
       }
     }
@@ -270,6 +277,7 @@ const Cameras = (() => {
           status: 'active',
           direction: p.direction || '',
           lastUpdated: null,
+          temperature: p.temperature ?? p.Temperature ?? null,
         };
       });
   }
@@ -290,6 +298,7 @@ const Cameras = (() => {
         status: cam.isActive !== false ? 'active' : 'inactive',
         direction: cam.direction || '',
         lastUpdated: cam.lastUpdated || null,
+        temperature: cam.temperature ?? cam.Temperature ?? null,
       }));
   }
 
@@ -309,6 +318,7 @@ const Cameras = (() => {
         status: cam.status === 'active' || cam.isActive !== false ? 'active' : 'inactive',
         direction: cam.direction || '',
         lastUpdated: cam.lastUpdated || null,
+        temperature: cam.temperature ?? cam.Temperature ?? null,
       }));
   }
 
@@ -331,6 +341,7 @@ const Cameras = (() => {
           status: 'active',
           direction: p.direction || '',
           lastUpdated: null,
+          temperature: p.temperature ?? p.Temperature ?? null,
         };
       });
   }
@@ -363,6 +374,7 @@ const Cameras = (() => {
           status: 'active',
           direction: a.direction || a.Direction || a.CompassDirection || '',
           lastUpdated: null,
+          temperature: a.Temperature ?? a.temperature ?? a.AirTemperature ?? a.airTemperature ?? a.Temp ?? null,
         };
       });
   }
@@ -405,6 +417,7 @@ const Cameras = (() => {
           status: cctv.inService === 'true' || cctv.inService === true ? 'active' : 'inactive',
           direction: loc.direction || '',
           lastUpdated: null,
+          temperature: cctv.temperature ?? cctv.Temperature ?? loc.temperature ?? null,
         };
       });
   }

@@ -1030,12 +1030,25 @@ button {
   gap: 4px 8px;
 }
 
+.thumb-temp {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  margin-left: auto;
+}
+
 .thumb-updated {
   flex-shrink: 0;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.65);
   margin-left: auto;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.thumb-temp ~ .thumb-updated {
+  margin-left: 0;
 }
 
 .thumb-overlay .camera-name {

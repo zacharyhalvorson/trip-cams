@@ -1093,6 +1093,7 @@ const App = (() => {
           <div class="thumb-overlay">
             ${regionBadge}
             <div class="camera-name">${cam.name}</div>
+            ${cam.temperature != null ? `<span class="thumb-temp">${Math.round(cam.temperature)}°C</span>` : ''}
             ${cam.lastUpdated ? `<span class="thumb-updated">${formatTimeSince(cam.lastUpdated, nowMs)}</span>` : ''}
           </div>
         </div>
@@ -1148,6 +1149,7 @@ const App = (() => {
           <div class="thumb-overlay">
             ${i === 0 ? regionBadge : (showRegion ? `<span class="thumb-region ${cam.region}">${cam.region}</span>` : '')}
             <div class="camera-name">${cam.name}${showDir ? ` <span class="cluster-direction">${dir}</span>` : ''}</div>
+            ${cam.temperature != null ? `<span class="thumb-temp">${Math.round(cam.temperature)}°C</span>` : ''}
             ${cam.lastUpdated ? `<span class="thumb-updated">${formatTimeSince(cam.lastUpdated, nowMs)}</span>` : ''}
           </div>
         </div>
