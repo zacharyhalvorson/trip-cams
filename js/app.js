@@ -2438,8 +2438,10 @@ const App = (() => {
       console.warn('SW registration failed:', err);
     });
 
-    // When the new SW takes over, reload to get fresh assets
+    let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloading) return;
+      reloading = true;
       window.location.reload();
     });
   }
