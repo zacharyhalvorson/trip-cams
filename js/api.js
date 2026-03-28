@@ -42,9 +42,10 @@ const API = (() => {
     // ── US: Custom formats ──
     WA: {
       urls: [
+        // Primary: static JSON file, no auth required, most reliable
         'https://data.wsdot.wa.gov/mobile/Cameras.json',
+        // Secondary: ArcGIS FeatureServer, no auth, standard format
         'https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query?where=1%3D1&outFields=*&f=json',
-        'https://www.wsdot.wa.gov/Traffic/api/HighwayCameras/HighwayCamerasREST.svc/GetCamerasAsJson?AccessCode=788bd008-7608-4534-8819-8b7495d91551',
       ],
       norm: 'normalizeWA', country: 'US'
     },
@@ -451,47 +452,75 @@ const API = (() => {
   // then proxy only if all direct attempts fail. Avoids the full retry chain
   // per URL which can take 40s+ each when endpoints are down.
   // Returns raw data on success, null if all attempts fail.
-  async function tryUrlsTwoPhase(urls) {
+  async function tryUrlsTwoPhase(urls, region) {
+    const label = region || 'multi-url';
+    const errors = [];
+    // Phase 1: try all URLs direct
     for (const url of urls) {
-      try { return await fetchDirect(url); } catch (e) { /* try next */ }
+      try {
+        const data = await fetchDirect(url);
+        if (data) return data;
+      } catch (e) {
+        errors.push({ url: url.split('?')[0], phase: 'direct', error: e.message });
+      }
     }
+    // Phase 2: try all URLs via primary proxy
     for (const url of urls) {
-      try { return await fetchWithProxy(url); } catch (e) { /* try next */ }
+      try {
+        const data = await fetchWithProxy(url);
+        if (data) return data;
+      } catch (e) {
+        errors.push({ url: url.split('?')[0], phase: 'proxy', error: e.message });
+      }
     }
+    // Phase 3: try all URLs via alt proxy
     for (const url of urls) {
-      try { return await fetchWithAltProxy(url); } catch (e) { /* try next */ }
+      try {
+        const data = await fetchWithAltProxy(url);
+        if (data) return data;
+      } catch (e) {
+        errors.push({ url: url.split('?')[0], phase: 'alt-proxy', error: e.message });
+      }
     }
+    console.warn(`[${label}] All fetch attempts failed:`, errors.map(e => `${e.phase} ${e.url}: ${e.error}`).join('; '));
     return null;
   }
 
   async function fetchRegionMultiUrl(region, urls, normalizer) {
     const cached = getCachedData(region);
     if (cached && cached.fresh) {
-      return { data: normalizer(cached.data), fromCache: true };
+      const data = normalizer(cached.data);
+      if (data.length === 0) {
+        // Cached data normalized to nothing — cache may be stale/corrupt, refetch
+        console.warn(`[${region}] Fresh cache normalized to 0 cameras, refetching`);
+      } else {
+        return { data, fromCache: true };
+      }
     }
     if (cached && !cached.fresh) {
       // Stale cache — return it, refresh in background
-      tryUrlsTwoPhase(urls).then(raw => { if (raw) setCachedData(region, raw); });
+      tryUrlsTwoPhase(urls, region).then(raw => { if (raw) setCachedData(region, raw); });
       return { data: normalizer(cached.data), fromCache: true, stale: true };
     }
-    // No cache — try direct then proxy
-    const raw = await tryUrlsTwoPhase(urls);
+    // No cache (or corrupt cache) — must fetch
+    const raw = await tryUrlsTwoPhase(urls, region);
     if (raw) {
-      const normalized = normalizer(raw);
-      if (normalized.length > 0) {
+      const data = normalizer(raw);
+      if (data.length > 0) {
         setCachedData(region, raw);
-        return { data: normalized, fromCache: false };
+        return { data, fromCache: false };
       }
-      // API returned empty data — fall through to bundled fallback
-      console.warn(`${region} API returned empty data, trying fallback`);
-    } else {
-      console.warn(`${region} all API URLs failed, trying fallback`);
+      console.warn(`[${region}] API returned data but normalized to 0 cameras`);
     }
-    // All URLs failed or returned empty — try fallback file
+    console.warn(`[${region}] All API URLs failed or returned bad data, using fallback`);
     const fallback = await fetchFallback(region);
     if (fallback) {
-      setCachedData(region, fallback);
-      return { data: normalizer(fallback), fromCache: true };
+      const data = normalizer(fallback);
+      if (data.length > 0) {
+        setCachedData(region, fallback);
+        return { data, fromCache: true };
+      }
+      console.warn(`[${region}] Fallback file also normalized to 0 cameras`);
     }
     return { data: [], fromCache: true, error: 'All endpoints failed' };
   }

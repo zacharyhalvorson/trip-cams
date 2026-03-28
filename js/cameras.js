@@ -168,47 +168,97 @@ const Cameras = (() => {
       });
   }
 
-  // Normalize WSDOT mobile JSON (data.wsdot.wa.gov/mobile/Cameras.json)
+  // Normalize WSDOT camera data — handles multiple API response formats.
+  // Logs diagnostics when normalization produces unexpected results.
   function normalizeWA(data) {
-    // REST API format: array of camera objects with CameraLocation nested object
+    if (!data) {
+      console.warn('[WA] normalizeWA called with falsy data:', data);
+      return [];
+    }
+
+    // Reject HTML error pages (API sometimes returns these on failure)
+    if (typeof data === 'string') {
+      console.warn('[WA] Received string instead of JSON (likely HTML error page)');
+      return [];
+    }
+
+    // Reject error wrapper objects (e.g. { error: { code: 500, ... } })
+    if (data.error && !data.features && !Array.isArray(data)) {
+      console.warn('[WA] Received error response:', data.error);
+      return [];
+    }
+
+    let cameras = [];
+
+    // Format 1: REST API — array of objects with CameraID
+    // Used by /mobile/Cameras.json and HighwayCamerasREST.svc
     if (Array.isArray(data) && data.length > 0 && data[0].CameraID !== undefined) {
-      return data
-        .filter(cam => {
-          const lat = cam.DisplayLatitude || cam.CameraLocation?.Latitude;
-          const lon = cam.DisplayLongitude || cam.CameraLocation?.Longitude;
-          return lat && lon;
-        })
-        .map(cam => ({
-          id: `wa-${cam.CameraID}`,
-          name: cam.Title || cam.Description || 'Unknown',
-          highway: cam.CameraLocation?.RoadName || '',
-          region: 'WA',
-          lat: cam.DisplayLatitude || cam.CameraLocation?.Latitude,
-          lon: cam.DisplayLongitude || cam.CameraLocation?.Longitude,
-          imageUrl: cam.ImageURL || '',
-          status: cam.IsActive !== false ? 'active' : 'inactive',
-          direction: cam.CameraLocation?.Direction || '',
-          lastUpdated: null,
-          temperature: cam.Temperature ?? cam.CurrentTemperature ?? null,
-        }));
+      cameras = normalizeWA_REST(data);
     }
-    // ArcGIS format fallback
-    if (data?.features) {
-      return Cameras.normalizeArcGIS(data, 'WA');
+    // Format 2: ArcGIS FeatureServer — { features: [...] }
+    else if (data?.features && Array.isArray(data.features)) {
+      cameras = normalizeArcGIS(data, 'WA');
     }
-    // Mobile endpoint format: { cameras: { items: [...] } }
-    const items = data?.cameras?.items || (Array.isArray(data) ? data : []);
-    return items
-      .filter(cam => cam.lat && cam.lon)
+    // Format 3: Mobile endpoint — { cameras: { items: [...] } }
+    else if (data?.cameras?.items) {
+      cameras = normalizeWA_Mobile(data.cameras.items);
+    }
+    // Format 4: Unwrapped array (mobile endpoint, plain array of lowercase objects)
+    else if (Array.isArray(data) && data.length > 0 && (data[0].lat || data[0].latitude)) {
+      cameras = normalizeWA_Mobile(data);
+    }
+    else {
+      // Unknown format — log the shape to help debug future API changes
+      const keys = typeof data === 'object' ? Object.keys(data).slice(0, 10) : [];
+      const isArr = Array.isArray(data);
+      const sample = isArr && data.length > 0 ? Object.keys(data[0]).slice(0, 10) : [];
+      console.warn(`[WA] Unknown response format. Type: ${typeof data}, isArray: ${isArr}, keys: [${keys}], sample item keys: [${sample}]`);
+      return [];
+    }
+
+    if (cameras.length === 0 && (Array.isArray(data) ? data.length > 0 : data?.features?.length > 0)) {
+      console.warn(`[WA] Normalization returned 0 cameras from non-empty input (${Array.isArray(data) ? data.length : data?.features?.length} raw items)`);
+    }
+
+    return cameras;
+  }
+
+  // WSDOT REST API format (CameraID-based objects)
+  function normalizeWA_REST(data) {
+    return data
+      .filter(cam => {
+        const lat = cam.DisplayLatitude || cam.CameraLocation?.Latitude;
+        const lon = cam.DisplayLongitude || cam.CameraLocation?.Longitude;
+        return lat && lon;
+      })
       .map(cam => ({
-        id: `wa-${cam.id}`,
-        name: cam.title || 'Unknown',
-        highway: cam.roadName || '',
+        id: `wa-${cam.CameraID}`,
+        name: cam.Title || cam.Description || 'Unknown',
+        highway: cam.CameraLocation?.RoadName || '',
         region: 'WA',
-        lat: cam.lat,
-        lon: cam.lon,
-        imageUrl: cam.url || '',
-        status: 'active',
+        lat: cam.DisplayLatitude || cam.CameraLocation?.Latitude,
+        lon: cam.DisplayLongitude || cam.CameraLocation?.Longitude,
+        imageUrl: cam.ImageURL || cam.CameraImageURL || '',
+        status: cam.IsActive !== false ? 'active' : 'inactive',
+        direction: cam.CameraLocation?.Direction || '',
+        lastUpdated: null,
+        temperature: cam.Temperature ?? cam.CurrentTemperature ?? null,
+      }));
+  }
+
+  // WSDOT mobile endpoint format (lowercase field names)
+  function normalizeWA_Mobile(items) {
+    return items
+      .filter(cam => (cam.lat || cam.latitude) && (cam.lon || cam.longitude))
+      .map(cam => ({
+        id: `wa-${cam.id || cam.cameraId || Math.random().toString(36).slice(2, 8)}`,
+        name: cam.title || cam.name || cam.description || 'Unknown',
+        highway: cam.roadName || cam.road || cam.route || '',
+        region: 'WA',
+        lat: cam.lat || cam.latitude,
+        lon: cam.lon || cam.longitude,
+        imageUrl: cam.url || cam.imageUrl || cam.imageURL || '',
+        status: cam.isActive !== false ? 'active' : 'inactive',
         direction: cam.direction || '',
         lastUpdated: null,
         temperature: cam.temperature ?? cam.temp ?? null,
