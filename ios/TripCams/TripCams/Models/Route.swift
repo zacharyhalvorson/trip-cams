@@ -33,7 +33,7 @@ struct RouteStop: Codable, Identifiable, Equatable {
     }
 }
 
-struct Waypoint: Equatable {
+struct Waypoint: Equatable, Codable {
     let lat: Double
     let lon: Double
 

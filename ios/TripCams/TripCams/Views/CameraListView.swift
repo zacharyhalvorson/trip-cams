@@ -53,11 +53,6 @@ struct CameraListView: View {
         .refreshable {
             await viewModel.refreshCameras()
         }
-        .sheet(item: $viewModel.selectedCamera) { camera in
-            CameraDetailView(camera: camera)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-        }
     }
 
     // MARK: - Status Header

@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var viewModel = TripViewModel()
+    @StateObject private var viewModel = TripViewModel.shared
     @State private var selectedTab = 0
 
     var body: some View {
@@ -42,6 +42,11 @@ struct ContentView: View {
             .tag(2)
         }
         .environmentObject(viewModel)
+        .sheet(item: $viewModel.selectedCamera) { camera in
+            CameraDetailView(camera: camera)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
     }
 }
 

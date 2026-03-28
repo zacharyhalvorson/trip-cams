@@ -16,24 +16,23 @@ struct RouteSelectionView: View {
     // Custom route
     @State private var originQuery: String = ""
     @State private var destinationQuery: String = ""
-    @State private var originResults: [GeocodingResult] = []
-    @State private var destinationResults: [GeocodingResult] = []
-    @State private var selectedOrigin: GeocodingResult?
-    @State private var selectedDestination: GeocodingResult?
+    @State private var originResults: [GeocodingService.GeocodedPlace] = []
+    @State private var destinationResults: [GeocodingService.GeocodedPlace] = []
+    @State private var selectedOrigin: GeocodingService.GeocodedPlace?
+    @State private var selectedDestination: GeocodingService.GeocodedPlace?
     @State private var isSearchingOrigin = false
     @State private var isSearchingDestination = false
 
+    private let geocoder = GeocodingService.shared
+
     var body: some View {
         List {
-            // Current route summary
             if viewModel.selectedRouteId != nil || !viewModel.routeWaypoints.isEmpty {
                 currentRouteSection
             }
 
-            // Predefined routes
             predefinedRoutesSection
 
-            // Custom route
             customRouteSection
         }
         .listStyle(.insetGrouped)
@@ -53,20 +52,17 @@ struct RouteSelectionView: View {
                     if let routeId = viewModel.selectedRouteId,
                        let route = viewModel.routes[routeId] {
                         Text(route.name)
-                            .font(.headline)
-                    } else {
-                        Text("Custom Route")
-                            .font(.headline)
+                            .font(.subheadline.bold())
                     }
 
                     if let from = viewModel.fromStop, let to = viewModel.toStop {
-                        Text("\(from.name) \u{2192} \(to.name)")
-                            .font(.subheadline)
+                        Text("\(from.name) → \(to.name)")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
                     Text(viewModel.loadingProgress)
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
 
@@ -74,13 +70,9 @@ struct RouteSelectionView: View {
 
                 if viewModel.isLoadingCameras {
                     ProgressView()
-                } else if !viewModel.cameras.isEmpty {
-                    Text("\(viewModel.cameras.count)")
-                        .font(.title3.bold())
-                        .foregroundStyle(.tint)
+                        .controlSize(.small)
                 }
             }
-            .padding(.vertical, 4)
         } header: {
             Text("Current Route")
         }
@@ -90,22 +82,18 @@ struct RouteSelectionView: View {
 
     private var predefinedRoutesSection: some View {
         Section {
-            let sortedRoutes = viewModel.routes.sorted(by: { $0.key < $1.key })
-            ForEach(sortedRoutes, id: \.key) { key, route in
-                predefinedRouteCard(routeId: key, route: route)
+            ForEach(viewModel.routes.sorted(by: { $0.key < $1.key }), id: \.key) { routeId, route in
+                routeCard(routeId: routeId, route: route)
             }
         } header: {
             Text("Predefined Routes")
-        } footer: {
-            Text("Select a route and choose origin/destination stops.")
         }
     }
 
-    private func predefinedRouteCard(routeId: String, route: Route) -> some View {
+    private func routeCard(routeId: String, route: Route) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Route header
             Button {
-                withAnimation(.snappy) {
+                withAnimation(.easeInOut(duration: 0.25)) {
                     if expandedRouteId == routeId {
                         expandedRouteId = nil
                     } else {
@@ -118,13 +106,12 @@ struct RouteSelectionView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(route.name)
-                            .font(.headline)
+                            .font(.subheadline.bold())
                             .foregroundStyle(.primary)
 
-                        Text(route.stops.map(\.name).joined(separator: " \u{2022} "))
+                        Text("\(route.stops.count) stops")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
                     }
 
                     Spacer()
@@ -136,48 +123,26 @@ struct RouteSelectionView: View {
             }
             .buttonStyle(.plain)
 
-            // Expanded: stop pickers
             if expandedRouteId == routeId {
-                VStack(spacing: 12) {
-                    // Origin picker
-                    HStack {
-                        Image(systemName: "circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.green)
-                        Text("From")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, alignment: .leading)
-                        Picker("Origin", selection: $selectedFrom) {
-                            ForEach(route.stops) { stop in
-                                Text(stop.name).tag(Optional(stop))
-                            }
+                VStack(spacing: 10) {
+                    Picker("From", selection: $selectedFrom) {
+                        Text("Select origin").tag(nil as RouteStop?)
+                        ForEach(route.stops) { stop in
+                            Text(stop.name).tag(stop as RouteStop?)
                         }
-                        .pickerStyle(.menu)
-                        .tint(.primary)
                     }
+                    .pickerStyle(.menu)
 
-                    // Destination picker
-                    HStack {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.red)
-                        Text("To")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, alignment: .leading)
-                        Picker("Destination", selection: $selectedTo) {
-                            ForEach(route.stops) { stop in
-                                Text(stop.name).tag(Optional(stop))
-                            }
+                    Picker("To", selection: $selectedTo) {
+                        Text("Select destination").tag(nil as RouteStop?)
+                        ForEach(route.stops) { stop in
+                            Text(stop.name).tag(stop as RouteStop?)
                         }
-                        .pickerStyle(.menu)
-                        .tint(.primary)
                     }
+                    .pickerStyle(.menu)
 
-                    // Load button
                     Button {
-                        if let from = selectedFrom, let to = selectedTo, from != to {
+                        if let from = selectedFrom, let to = selectedTo {
                             viewModel.selectRoute(routeId: routeId, from: from, to: to)
                         }
                     } label: {
@@ -201,111 +166,26 @@ struct RouteSelectionView: View {
 
     private var customRouteSection: some View {
         Section {
-            // Origin search
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Origin", systemImage: "circle.fill")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.green)
+            searchField(
+                label: "Origin",
+                icon: "circle.fill",
+                color: .green,
+                query: $originQuery,
+                results: $originResults,
+                selected: $selectedOrigin,
+                isSearching: $isSearchingOrigin
+            )
 
-                HStack {
-                    TextField("Search city or address", text: $originQuery)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        .onSubmit { searchOrigin() }
+            searchField(
+                label: "Destination",
+                icon: "mappin.circle.fill",
+                color: .red,
+                query: $destinationQuery,
+                results: $destinationResults,
+                selected: $selectedDestination,
+                isSearching: $isSearchingDestination
+            )
 
-                    if isSearchingOrigin {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Button {
-                            searchOrigin()
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-                        }
-                        .disabled(originQuery.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                }
-
-                if let origin = selectedOrigin {
-                    selectedPlaceBadge(name: origin.name, onClear: {
-                        selectedOrigin = nil
-                    })
-                }
-
-                if !originResults.isEmpty && selectedOrigin == nil {
-                    ForEach(originResults) { result in
-                        Button {
-                            selectedOrigin = result
-                            originQuery = result.name
-                            originResults = []
-                        } label: {
-                            HStack {
-                                Image(systemName: "mappin")
-                                    .foregroundStyle(.secondary)
-                                Text(result.name)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-
-            // Destination search
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Destination", systemImage: "mappin.circle.fill")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.red)
-
-                HStack {
-                    TextField("Search city or address", text: $destinationQuery)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        .onSubmit { searchDestination() }
-
-                    if isSearchingDestination {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Button {
-                            searchDestination()
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-                        }
-                        .disabled(destinationQuery.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                }
-
-                if let dest = selectedDestination {
-                    selectedPlaceBadge(name: dest.name, onClear: {
-                        selectedDestination = nil
-                    })
-                }
-
-                if !destinationResults.isEmpty && selectedDestination == nil {
-                    ForEach(destinationResults) { result in
-                        Button {
-                            selectedDestination = result
-                            destinationQuery = result.name
-                            destinationResults = []
-                        } label: {
-                            HStack {
-                                Image(systemName: "mappin")
-                                    .foregroundStyle(.secondary)
-                                Text(result.name)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-
-            // Load button
             Button {
                 if let origin = selectedOrigin, let dest = selectedDestination {
                     viewModel.selectCustomRoute(
@@ -326,6 +206,71 @@ struct RouteSelectionView: View {
             Text("Custom Route")
         } footer: {
             Text("Search for any two locations to find highway cameras along the route.")
+        }
+    }
+
+    // MARK: - Reusable Search Field
+
+    private func searchField(
+        label: String,
+        icon: String,
+        color: Color,
+        query: Binding<String>,
+        results: Binding<[GeocodingService.GeocodedPlace]>,
+        selected: Binding<GeocodingService.GeocodedPlace?>,
+        isSearching: Binding<Bool>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(label, systemImage: icon)
+                .font(.subheadline.bold())
+                .foregroundStyle(color)
+
+            HStack {
+                TextField("Search city or address", text: query)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    .onSubmit {
+                        performSearch(query: query, results: results, isSearching: isSearching)
+                    }
+
+                if isSearching.wrappedValue {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Button {
+                        performSearch(query: query, results: results, isSearching: isSearching)
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    .disabled(query.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+
+            if let place = selected.wrappedValue {
+                selectedPlaceBadge(name: place.displayName, onClear: {
+                    selected.wrappedValue = nil
+                })
+            }
+
+            if !results.wrappedValue.isEmpty && selected.wrappedValue == nil {
+                ForEach(results.wrappedValue) { result in
+                    Button {
+                        selected.wrappedValue = result
+                        query.wrappedValue = result.name
+                        results.wrappedValue = []
+                    } label: {
+                        HStack {
+                            Image(systemName: "mappin")
+                                .foregroundStyle(.secondary)
+                            Text(result.displayName)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 
@@ -350,71 +295,19 @@ struct RouteSelectionView: View {
         .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8))
     }
 
-    // MARK: - Geocoding
-
-    private func searchOrigin() {
-        let query = originQuery.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return }
-        isSearchingOrigin = true
+    private func performSearch(
+        query: Binding<String>,
+        results: Binding<[GeocodingService.GeocodedPlace]>,
+        isSearching: Binding<Bool>
+    ) {
+        let text = query.wrappedValue.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return }
+        isSearching.wrappedValue = true
         Task {
-            originResults = await geocode(query: query)
-            isSearchingOrigin = false
+            results.wrappedValue = await geocoder.search(query: text)
+            isSearching.wrappedValue = false
         }
     }
-
-    private func searchDestination() {
-        let query = destinationQuery.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return }
-        isSearchingDestination = true
-        Task {
-            destinationResults = await geocode(query: query)
-            isSearchingDestination = false
-        }
-    }
-
-    /// Geocode using Photon/Komoot API
-    private func geocode(query: String) async -> [GeocodingResult] {
-        guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://photon.komoot.io/api/?q=\(encoded)&limit=5") else {
-            return []
-        }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-            guard let features = json?["features"] as? [[String: Any]] else { return [] }
-
-            return features.compactMap { feature -> GeocodingResult? in
-                guard let geometry = feature["geometry"] as? [String: Any],
-                      let coords = geometry["coordinates"] as? [Double],
-                      coords.count >= 2,
-                      let properties = feature["properties"] as? [String: Any] else {
-                    return nil
-                }
-                let name = properties["name"] as? String ?? "Unknown"
-                let state = properties["state"] as? String
-                let country = properties["country"] as? String
-                let displayParts = [name, state, country].compactMap { $0 }
-                return GeocodingResult(
-                    id: UUID().uuidString,
-                    name: displayParts.joined(separator: ", "),
-                    lat: coords[1],
-                    lon: coords[0]
-                )
-            }
-        } catch {
-            return []
-        }
-    }
-}
-
-// MARK: - Geocoding Result Model
-
-struct GeocodingResult: Identifiable {
-    let id: String
-    let name: String
-    let lat: Double
-    let lon: Double
 }
 
 #Preview {

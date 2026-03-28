@@ -48,7 +48,7 @@ class CameraAPIService: ObservableObject {
 
     private static let batchSize = 8
 
-    init() {
+    private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 10
         config.timeoutIntervalForResource = 30
@@ -202,6 +202,15 @@ class CameraAPIService: ObservableObject {
     // MARK: - California Districts
 
     private func fetchCaliforniaDistricts(onRegion: @escaping (String, [Camera]) -> Void) async {
+        // Check cache first
+        if let cached = await cacheService.get(key: "CA") {
+            let cameras = normalizeCA(data: cached.data, district: 0)
+            if cached.fresh && !cameras.isEmpty {
+                onRegion("CA", cameras)
+                return
+            }
+        }
+
         await withTaskGroup(of: [Camera].self) { group in
             for district in Self.caDistricts {
                 group.addTask { [weak self] in
@@ -232,7 +241,7 @@ class CameraAPIService: ObservableObject {
     private func normalize(data: Data, endpoint: CameraEndpoint) -> [Camera] {
         switch endpoint.normalizer {
         case .alberta:
-            return normalizeAlberta(data: data)
+            return normalizeIBI(data: data, region: "AB")
         case .ibi(let region):
             return normalizeIBI(data: data, region: region)
         case .bc:
@@ -270,12 +279,7 @@ class CameraAPIService: ObservableObject {
 
     // MARK: - Normalizers
 
-    /// IBI 511 format (Alberta). Each camera has Views[] with individual images.
-    private func normalizeAlberta(data: Data) -> [Camera] {
-        return normalizeIBI(data: data, region: "AB")
-    }
-
-    /// Generic IBI 511 normalizer. Used by AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, GA, WI, LA, AZ, ID, AK, UT, NV, CT.
+    /// IBI 511 normalizer. Used by AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, GA, WI, LA, AZ, ID, AK, UT, NV, CT.
     private func normalizeIBI(data: Data, region: String) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []
@@ -726,35 +730,4 @@ class CameraAPIService: ObservableObject {
         return cameras
     }
 
-    // MARK: - Region Detection
-
-    /// Determine which regions a route passes through based on waypoint sampling.
-    func detectRegions(waypoints: [Waypoint], bounds: RegionBoundsData) -> Set<String> {
-        var regions = Set<String>()
-        let step = max(1, waypoints.count / 50)
-
-        for i in stride(from: 0, to: waypoints.count, by: step) {
-            let wp = waypoints[i]
-            for (_, regionMap) in bounds {
-                for (code, bound) in regionMap {
-                    if bound.contains(latitude: wp.lat, longitude: wp.lon) {
-                        regions.insert(code)
-                    }
-                }
-            }
-        }
-
-        // Always check last point
-        if let last = waypoints.last {
-            for (_, regionMap) in bounds {
-                for (code, bound) in regionMap {
-                    if bound.contains(latitude: last.lat, longitude: last.lon) {
-                        regions.insert(code)
-                    }
-                }
-            }
-        }
-
-        return regions
-    }
 }

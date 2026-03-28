@@ -12,8 +12,8 @@ class RouteService: ObservableObject {
     private let routeCacheDuration: TimeInterval = 86400 // 24 hours
 
     @Published var routeData: RouteData?
-    @Published var currentGeometry: [Waypoint] = []
-    @Published var isLoadingRoute: Bool = false
+
+    private var cachedRegionBounds: RegionBoundsData?
 
     // MARK: - Bundled Data
 
@@ -82,11 +82,13 @@ class RouteService: ObservableObject {
 
     // MARK: - Region Bounds
 
-    /// Load region bounds from bundled JSON
     func loadRegionBounds() -> RegionBoundsData? {
+        if let cached = cachedRegionBounds { return cached }
         guard let url = Bundle.main.url(forResource: "region-bounds", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else { return nil }
-        return try? JSONDecoder().decode(RegionBoundsData.self, from: data)
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode(RegionBoundsData.self, from: data) else { return nil }
+        cachedRegionBounds = decoded
+        return decoded
     }
 
     // MARK: - Private Helpers
@@ -113,7 +115,7 @@ class RouteService: ObservableObject {
               Date().timeIntervalSince(wrapper.timestamp) < routeCacheDuration else {
             return nil
         }
-        return wrapper.decodedWaypoints
+        return wrapper.waypoints
     }
 
     private func saveCachedGeometry(key: String, waypoints: [Waypoint]) {
@@ -124,19 +126,7 @@ class RouteService: ObservableObject {
     }
 }
 
-// MARK: - Cache Model
-
-/// Internal Codable wrapper since Waypoint is not Codable
 private struct CachedGeometry: Codable {
-    let coordinates: [[Double]]  // [[lat, lon], ...]
+    let waypoints: [Waypoint]
     let timestamp: Date
-
-    init(waypoints: [Waypoint], timestamp: Date) {
-        self.coordinates = waypoints.map { [$0.lat, $0.lon] }
-        self.timestamp = timestamp
-    }
-
-    var decodedWaypoints: [Waypoint] {
-        coordinates.map { Waypoint(lat: $0[0], lon: $0[1]) }
-    }
 }

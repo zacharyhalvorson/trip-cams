@@ -9,12 +9,11 @@ import UIKit
 @MainActor
 class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     var interfaceController: CPInterfaceController?
-    private var tripViewModel: TripViewModel?
+    private var tripViewModel: TripViewModel? { TripViewModel.shared }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                    didConnect interfaceController: CPInterfaceController) {
         self.interfaceController = interfaceController
-        self.tripViewModel = TripViewModel()
 
         let tabBar = CPTabBarTemplate(templates: [
             createCameraListTemplate(),
@@ -31,7 +30,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     // MARK: - Camera List Tab
 
-    /// Creates the camera list tab showing clusters along the current route
     private func createCameraListTemplate() -> CPListTemplate {
         let template = CPListTemplate(title: "Cameras", sections: [])
         template.tabImage = UIImage(systemName: "camera")
@@ -41,7 +39,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     // MARK: - Route Selection Tab
 
-    /// Creates the route selection tab showing predefined routes
     private func createRouteSelectionTemplate() -> CPListTemplate {
         guard let viewModel = tripViewModel else {
             return CPListTemplate(title: "Routes", sections: [])
@@ -65,7 +62,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     // MARK: - Route Stops
 
-    /// Shows stops for a route so the user can pick an origin
     private func showRouteStops(routeId: String, route: Route) {
         let items: [CPListItem] = route.stops.map { stop in
             let item = CPListItem(text: stop.name, detailText: stop.region)
@@ -77,8 +73,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                 let lastStop = route.stops[route.stops.count - 1]
                 Task { @MainActor in
                     viewModel.selectRoute(routeId: routeId, from: stop, to: lastStop)
-                    // Allow time for cameras to load before refreshing the list
-                    try? await Task.sleep(for: .seconds(2))
+                    await viewModel.loadCamerasForRoute()
                     if let tabBar = self.interfaceController?.rootTemplate as? CPTabBarTemplate,
                        let cameraTemplate = tabBar.templates.first as? CPListTemplate {
                         self.updateCameraList(template: cameraTemplate)
@@ -96,7 +91,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     // MARK: - Camera List Updates
 
-    /// Updates the camera list template with current clusters
     private func updateCameraList(template: CPListTemplate) {
         guard let viewModel = tripViewModel else { return }
 
@@ -122,7 +116,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     // MARK: - Cluster Detail
 
-    /// Shows individual cameras within a cluster
     private func showClusterDetail(cluster: CameraCluster) {
         let items: [CPListItem] = cluster.cameras.map { camera in
             let item = CPListItem(text: camera.name, detailText: "\(camera.highway) \(camera.direction)")
@@ -139,7 +132,6 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     // MARK: - Camera Detail
 
-    /// Shows detailed info for a single camera
     private func showCameraDetail(camera: Camera) {
         var items: [CPInformationItem] = [
             CPInformationItem(title: "Highway", detail: camera.highway),

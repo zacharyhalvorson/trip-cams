@@ -219,25 +219,29 @@ struct CameraDetailView: View {
 
     // MARK: - Helpers
 
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    private static let isoFormatterNoFrac: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+
     private func formatTimestamp(_ timestamp: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        if let date = formatter.date(from: timestamp) {
-            let relative = RelativeDateTimeFormatter()
-            relative.unitsStyle = .abbreviated
-            return relative.localizedString(for: date, relativeTo: Date())
-        }
-
-        // Try without fractional seconds
-        formatter.formatOptions = [.withInternetDateTime]
-        if let date = formatter.date(from: timestamp) {
-            let relative = RelativeDateTimeFormatter()
-            relative.unitsStyle = .abbreviated
-            return relative.localizedString(for: date, relativeTo: Date())
-        }
-
-        return timestamp
+        let date = Self.isoFormatter.date(from: timestamp)
+            ?? Self.isoFormatterNoFrac.date(from: timestamp)
+        guard let date else { return timestamp }
+        return Self.relativeFormatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

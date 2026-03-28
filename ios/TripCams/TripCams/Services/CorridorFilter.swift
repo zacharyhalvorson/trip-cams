@@ -12,7 +12,6 @@ enum CorridorFilter {
 
     // MARK: - Distance Calculations
 
-    /// Haversine distance between two points in kilometers
     static func haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
         let dLat = (lat2 - lat1) * .pi / 180
         let dLon = (lon2 - lon1) * .pi / 180
@@ -23,8 +22,6 @@ enum CorridorFilter {
         return earthRadiusKm * c
     }
 
-    /// Distance from a point to the nearest segment of a polyline (in km).
-    /// Port of pointToPolylineDistance from cameras.js.
     static func pointToPolylineDistance(lat: Double, lon: Double, waypoints: [Waypoint]) -> Double {
         guard waypoints.count >= 2 else {
             guard let wp = waypoints.first else { return .infinity }
@@ -43,7 +40,6 @@ enum CorridorFilter {
         return minDist
     }
 
-    /// Distance from a point to a line segment defined by two endpoints
     private static func pointToSegmentDistance(
         lat: Double, lon: Double,
         lat1: Double, lon1: Double,
@@ -73,7 +69,6 @@ enum CorridorFilter {
 
     // MARK: - Filtering
 
-    /// Filter cameras within buffer distance of route polyline
     static func filterCameras(_ cameras: [Camera], waypoints: [Waypoint], bufferKm: Double) -> [Camera] {
         let sampled = downsampleWaypoints(waypoints, targetSpacingKm: 0.5)
         return cameras.filter { camera in
@@ -82,7 +77,6 @@ enum CorridorFilter {
         }
     }
 
-    /// Downsample dense waypoints to a target spacing for faster corridor checks
     static func downsampleWaypoints(_ waypoints: [Waypoint], targetSpacingKm: Double) -> [Waypoint] {
         guard waypoints.count > 50 else { return waypoints }
         var totalDist = 0.0
@@ -106,7 +100,6 @@ enum CorridorFilter {
 
     // MARK: - Sorting
 
-    /// Sort cameras by their projected position along the route (0.0 to 1.0)
     static func sortByRoutePosition(_ cameras: [Camera], waypoints: [Waypoint]) -> [Camera] {
         let positions = cameras.map { camera -> (Camera, Double) in
             let pos = routePosition(lat: camera.lat, lon: camera.lon, waypoints: waypoints)
@@ -115,7 +108,6 @@ enum CorridorFilter {
         return positions.sorted { $0.1 < $1.1 }.map { $0.0 }
     }
 
-    /// Find the normalized position (0.0 to 1.0) of a point along the route
     static func routePosition(lat: Double, lon: Double, waypoints: [Waypoint]) -> Double {
         guard waypoints.count >= 2 else { return 0 }
         var bestDist = Double.infinity
@@ -132,8 +124,6 @@ enum CorridorFilter {
 
     // MARK: - Clustering
 
-    /// Cluster nearby cameras that are within the threshold distance.
-    /// Cameras must be pre-sorted by route position for sequential clustering.
     static func clusterCameras(_ cameras: [Camera], thresholdKm: Double = defaultClusterThresholdKm) -> [CameraCluster] {
         guard !cameras.isEmpty else { return [] }
         var clusters: [CameraCluster] = []
@@ -167,9 +157,35 @@ enum CorridorFilter {
         )
     }
 
+    // MARK: - Region Detection
+
+    static func detectRegions(waypoints: [Waypoint], bounds: RegionBoundsData) -> Set<String> {
+        var regions = Set<String>()
+        let step = max(1, waypoints.count / 50)
+        for i in stride(from: 0, to: waypoints.count, by: step) {
+            let wp = waypoints[i]
+            for (_, regionMap) in bounds {
+                for (code, bound) in regionMap {
+                    if bound.contains(latitude: wp.lat, longitude: wp.lon) {
+                        regions.insert(code)
+                    }
+                }
+            }
+        }
+        if let last = waypoints.last {
+            for (_, regionMap) in bounds {
+                for (code, bound) in regionMap {
+                    if bound.contains(latitude: last.lat, longitude: last.lon) {
+                        regions.insert(code)
+                    }
+                }
+            }
+        }
+        return regions
+    }
+
     // MARK: - Bearing
 
-    /// Bearing in degrees from one waypoint to another
     static func bearing(from: Waypoint, to: Waypoint) -> Double {
         let lat1 = from.lat * .pi / 180
         let lat2 = to.lat * .pi / 180

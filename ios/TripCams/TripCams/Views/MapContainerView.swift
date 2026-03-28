@@ -12,7 +12,6 @@ struct MapContainerView: View {
 
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var selectedCameraId: String?
-    @State private var showingDetail = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -22,11 +21,8 @@ struct MapContainerView: View {
         .onChange(of: viewModel.routeGeometry) {
             fitMapToRoute()
         }
-        .sheet(item: $viewModel.selectedCamera) { camera in
-            CameraDetailView(camera: camera)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-        }
+
+
     }
 
     // MARK: - Map Content
@@ -49,7 +45,7 @@ struct MapContainerView: View {
                         coordinate: camera.coordinate,
                         anchor: .bottom
                     ) {
-                        cameraMarker(camera: camera, count: 1)
+                        cameraMarker()
                     }
                     .tag(camera.id)
                 } else {
@@ -94,7 +90,7 @@ struct MapContainerView: View {
 
     // MARK: - Camera Marker
 
-    private func cameraMarker(camera: Camera, count: Int) -> some View {
+    private func cameraMarker() -> some View {
         VStack(spacing: 0) {
             ZStack {
                 Circle()
