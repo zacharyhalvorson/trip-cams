@@ -1463,6 +1463,59 @@ button {
 }
 
 /* =============================================================
+   Update Banner
+   ============================================================= */
+
+.update-banner {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--green);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  transform: translateY(-100%);
+  transition: transform var(--duration) var(--spring);
+}
+
+.update-banner.visible {
+  transform: translateY(0);
+}
+
+.update-banner-text {
+  white-space: nowrap;
+}
+
+.update-banner-btn {
+  padding: 5px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+  white-space: nowrap;
+}
+
+.update-banner-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.update-banner-btn:active {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* =============================================================
    Empty State
    ============================================================= */
 

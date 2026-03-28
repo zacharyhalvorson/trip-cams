@@ -194,6 +194,8 @@ const App = (() => {
     dom.modalClose = $('#modalClose');
     dom.offlineBanner = $('#offlineBanner');
     dom.pullToRefresh = $('#pullToRefresh');
+    dom.updateBanner = $('#updateBanner');
+    dom.updateBtn = $('#updateBtn');
   }
 
   async function init() {
@@ -413,6 +415,9 @@ const App = (() => {
         else if (dom.dropdown.classList.contains('active')) closeDropdown();
       }
     });
+
+    // Update banner
+    dom.updateBtn.addEventListener('click', _applyUpdate);
 
     // Online/offline
     window.addEventListener('online', updateOnlineStatus);
@@ -2408,11 +2413,45 @@ const App = (() => {
 
   // ── Service Worker ───────────────────────────────────────────
 
+  let _waitingSW = null;
+
   function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => {
-        console.warn('SW registration failed:', err);
+    if (!('serviceWorker' in navigator)) return;
+
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      // If a new SW is already waiting (e.g. from a previous page load)
+      if (reg.waiting) {
+        _showUpdateBanner(reg.waiting);
+      }
+
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          // New SW installed and waiting to activate
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            _showUpdateBanner(newSW);
+          }
+        });
       });
+    }).catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+
+    // When the new SW takes over, reload to get fresh assets
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+  }
+
+  function _showUpdateBanner(waitingSW) {
+    _waitingSW = waitingSW;
+    dom.updateBanner.classList.add('visible');
+  }
+
+  function _applyUpdate() {
+    if (_waitingSW) {
+      _waitingSW.postMessage({ type: 'SKIP_WAITING' });
     }
   }
 
