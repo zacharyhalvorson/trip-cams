@@ -251,7 +251,7 @@ const Cameras = (() => {
     return items
       .filter(cam => (cam.lat || cam.latitude) && (cam.lon || cam.longitude))
       .map(cam => ({
-        id: `wa-${cam.id || cam.cameraId || Math.random().toString(36).slice(2, 8)}`,
+        id: `wa-${cam.id || cam.cameraId || `${cam.lat || cam.latitude}-${cam.lon || cam.longitude}`}`,
         name: cam.title || cam.name || cam.description || 'Unknown',
         highway: cam.roadName || cam.road || cam.route || '',
         region: 'WA',

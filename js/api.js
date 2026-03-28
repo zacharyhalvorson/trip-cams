@@ -455,34 +455,22 @@ const API = (() => {
   async function tryUrlsTwoPhase(urls, region) {
     const label = region || 'multi-url';
     const errors = [];
-    // Phase 1: try all URLs direct
-    for (const url of urls) {
-      try {
-        const data = await fetchDirect(url);
-        if (data) return data;
-      } catch (e) {
-        errors.push({ url: url.split('?')[0], phase: 'direct', error: e.message });
+    const phases = [
+      ['direct', fetchDirect],
+      ['proxy', fetchWithProxy],
+      ['alt-proxy', fetchWithAltProxy],
+    ];
+    for (const [phase, fetchFn] of phases) {
+      for (const url of urls) {
+        try {
+          const data = await fetchFn(url);
+          if (data) return data;
+        } catch (e) {
+          errors.push(`${phase} ${url.split('?')[0]}: ${e.message}`);
+        }
       }
     }
-    // Phase 2: try all URLs via primary proxy
-    for (const url of urls) {
-      try {
-        const data = await fetchWithProxy(url);
-        if (data) return data;
-      } catch (e) {
-        errors.push({ url: url.split('?')[0], phase: 'proxy', error: e.message });
-      }
-    }
-    // Phase 3: try all URLs via alt proxy
-    for (const url of urls) {
-      try {
-        const data = await fetchWithAltProxy(url);
-        if (data) return data;
-      } catch (e) {
-        errors.push({ url: url.split('?')[0], phase: 'alt-proxy', error: e.message });
-      }
-    }
-    console.warn(`[${label}] All fetch attempts failed:`, errors.map(e => `${e.phase} ${e.url}: ${e.error}`).join('; '));
+    console.warn(`[${label}] All fetch attempts failed:`, errors.join('; '));
     return null;
   }
 
@@ -491,16 +479,23 @@ const API = (() => {
     if (cached && cached.fresh) {
       const data = normalizer(cached.data);
       if (data.length === 0) {
-        // Cached data normalized to nothing — cache may be stale/corrupt, refetch
-        console.warn(`[${region}] Fresh cache normalized to 0 cameras, refetching`);
+        // Cached data normalized to nothing — cache is corrupt, clear it and refetch
+        console.warn(`[${region}] Fresh cache normalized to 0 cameras, clearing and refetching`);
+        memCache[region] = null;
+        try { localStorage.removeItem(`${CACHE_KEY}_${region}`); } catch (e) { /* ignore */ }
       } else {
         return { data, fromCache: true };
       }
     }
     if (cached && !cached.fresh) {
-      // Stale cache — return it, refresh in background
-      tryUrlsTwoPhase(urls, region).then(raw => { if (raw) setCachedData(region, raw); });
-      return { data: normalizer(cached.data), fromCache: true, stale: true };
+      const data = normalizer(cached.data);
+      if (data.length > 0) {
+        // Stale cache has usable data — return it, refresh in background
+        tryUrlsTwoPhase(urls, region).then(raw => { if (raw) setCachedData(region, raw); });
+        return { data, fromCache: true, stale: true };
+      }
+      // Stale cache normalized to 0 — don't return empty, fall through to fetch
+      console.warn(`[${region}] Stale cache normalized to 0 cameras, refetching`);
     }
     // No cache (or corrupt cache) — must fetch
     const raw = await tryUrlsTwoPhase(urls, region);
