@@ -44,7 +44,13 @@ self.addEventListener('install', (event) => {
       }
     })
   );
-  self.skipWaiting();
+});
+
+// Skip waiting when told by the app (not done automatically so the update banner can appear)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Activate — cleanup old caches
