@@ -23,4 +23,8 @@ struct CameraCluster: Identifiable {
     var name: String {
         primaryCamera.name
     }
+
+    var summary: String {
+        cameras.count > 1 ? "\(cameras.count) cameras" : primaryCamera.highway
+    }
 }

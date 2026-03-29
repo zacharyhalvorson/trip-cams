@@ -159,35 +159,9 @@ struct MapContainerView: View {
     // MARK: - Helpers
 
     private func fitMapToRoute() {
-        let points = viewModel.routeGeometry
-        guard !points.isEmpty else { return }
-
-        let lats = points.map(\.lat)
-        let lons = points.map(\.lon)
-
-        guard let minLat = lats.min(),
-              let maxLat = lats.max(),
-              let minLon = lons.min(),
-              let maxLon = lons.max() else { return }
-
-        let center = CLLocationCoordinate2D(
-            latitude: (minLat + maxLat) / 2,
-            longitude: (minLon + maxLon) / 2
-        )
-
-        let latDelta = (maxLat - minLat) * 1.3
-        let lonDelta = (maxLon - minLon) * 1.3
-
+        guard let region = viewModel.routeGeometry.boundingRegion() else { return }
         withAnimation(.easeInOut(duration: 0.5)) {
-            cameraPosition = .region(
-                MKCoordinateRegion(
-                    center: center,
-                    span: MKCoordinateSpan(
-                        latitudeDelta: max(latDelta, 0.05),
-                        longitudeDelta: max(lonDelta, 0.05)
-                    )
-                )
-            )
+            cameraPosition = .region(region)
         }
     }
 }

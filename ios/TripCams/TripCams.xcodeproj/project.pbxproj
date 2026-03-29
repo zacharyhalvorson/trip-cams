@@ -30,6 +30,7 @@
 		A1B2C3D4E5F60001000012 /* CameraCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000012; };
 		A1B2C3D4E5F60001000013 /* MapContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000013; };
 		A1B2C3D4E5F60001000014 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000014; };
+		A1B2C3D4E5F6000100001B /* CarPlayMapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000200001E; };
 		A1B2C3D4E5F60001000015 /* route.json in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000015; };
 		A1B2C3D4E5F60001000016 /* region-bounds.json in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000016; };
 		A1B2C3D4E5F60001000017 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000017; };
@@ -62,6 +63,7 @@
 		A1B2C3D4E5F60002000012 /* CameraCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCardView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000013 /* MapContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapContainerView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000014 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000200001E /* CarPlayMapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayMapViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000015 /* route.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = route.json; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000016 /* region-bounds.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "region-bounds.json"; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000017 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F60002000014 /* CarPlaySceneDelegate.swift */,
+				A1B2C3D4E5F6000200001E /* CarPlayMapViewController.swift */,
 			);
 			path = CarPlay;
 			sourceTree = "<group>";
@@ -291,6 +294,7 @@
 				A1B2C3D4E5F60001000012 /* CameraCardView.swift in Sources */,
 				A1B2C3D4E5F60001000013 /* MapContainerView.swift in Sources */,
 				A1B2C3D4E5F60001000014 /* CarPlaySceneDelegate.swift in Sources */,
+				A1B2C3D4E5F6000100001B /* CarPlayMapViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

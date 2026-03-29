@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 extension Color {
     static let tripGreen = Color(red: 0.176, green: 0.722, blue: 0.294)
@@ -31,4 +32,8 @@ extension Color {
         default: return .gray
         }
     }
+}
+
+extension UIColor {
+    static let tripGreen = UIColor(red: 0.176, green: 0.722, blue: 0.294, alpha: 1)
 }
