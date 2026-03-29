@@ -3,7 +3,13 @@
    ============================================================= */
 
 const API = (() => {
+  // Self-hosted Cloudflare Worker proxy (deploy cors-proxy/ to your account)
+  // Set to your worker URL, e.g. 'https://road-trip-cameras-cors.<you>.workers.dev'
+  const SELF_PROXY = '';
+
   const CORS_PROXIES = [
+    // Self-hosted proxy is first when configured — most reliable, no rate limits
+    ...(SELF_PROXY ? [url => `${SELF_PROXY}/?${url}`] : []),
     url => `https://proxy.corsfix.com/?${url}`,
     url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
     url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
