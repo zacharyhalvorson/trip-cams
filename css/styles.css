@@ -125,9 +125,7 @@ button {
   right: 0;
   z-index: 1000;
   padding: calc(var(--safe-top) + 10px) 12px 10px;
-  background: var(--surface-overlay);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 
