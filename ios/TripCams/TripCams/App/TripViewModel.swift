@@ -6,7 +6,6 @@
 import Foundation
 import CoreLocation
 import SwiftUI
-
 @MainActor
 class TripViewModel: ObservableObject {
     static let shared = TripViewModel()
@@ -32,6 +31,10 @@ class TripViewModel: ObservableObject {
     @Published var selectedCamera: Camera?
     @Published var selectedCluster: CameraCluster?
 
+    // Route picker dropdown
+    enum DropdownField { case none, from, to }
+    @Published var activeDropdown: DropdownField = .none
+
     // Services
     private let routeService = RouteService.shared
     private let cameraAPI = CameraAPIService.shared
@@ -41,6 +44,7 @@ class TripViewModel: ObservableObject {
 
     init() {
         loadRouteData()
+        loadDefaultRoute()
     }
 
     func loadRouteData() {
@@ -131,5 +135,46 @@ class TripViewModel: ObservableObject {
     func refreshCameras() async {
         guard !routeWaypoints.isEmpty else { return }
         await loadCamerasForRoute()
+    }
+
+    // MARK: - Default Route
+
+    private func loadDefaultRoute() {
+        guard let route = routes["northern"] else { return }
+        let from = route.stops.first(where: { $0.id == "vancouver" }) ?? route.stops.first
+        let to = route.stops.first(where: { $0.id == "calgary" }) ?? route.stops.last
+        guard let from, let to else { return }
+        selectRoute(routeId: "northern", from: from, to: to)
+    }
+
+    // MARK: - Route Picker
+
+    func swapFromTo() {
+        let oldFrom = fromStop
+        fromStop = toStop
+        toStop = oldFrom
+        guard fromStop != nil, toStop != nil else { return }
+        if let routeId = selectedRouteId {
+            selectRoute(routeId: routeId, from: fromStop!, to: toStop!)
+        } else {
+            routeWaypoints = [
+                Waypoint(lat: fromStop!.lat, lon: fromStop!.lon),
+                Waypoint(lat: toStop!.lat, lon: toStop!.lon)
+            ]
+            Task { await loadCamerasForRoute() }
+        }
+    }
+
+    var allStops: [RouteStop] {
+        var seen = Set<String>()
+        var result: [RouteStop] = []
+        for route in routes.values.sorted(by: { $0.name < $1.name }) {
+            for stop in route.stops {
+                if seen.insert(stop.id).inserted {
+                    result.append(stop)
+                }
+            }
+        }
+        return result
     }
 }

@@ -14,15 +14,20 @@ struct MapContainerView: View {
     @State private var selectedCameraId: String?
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .trailing) {
             mapContent
-            overlayControls
+
+            // Position controls in the vertical middle-right area, above the sheet
+            VStack {
+                Spacer()
+                overlayControls
+                Spacer()
+                    .frame(height: 220)
+            }
         }
         .onChange(of: viewModel.routeGeometry) {
             fitMapToRoute()
         }
-
-
     }
 
     // MARK: - Map Content
@@ -32,13 +37,12 @@ struct MapContainerView: View {
             // Route polyline
             if viewModel.routeGeometry.count >= 2 {
                 MapPolyline(coordinates: viewModel.routeGeometry.map(\.coordinate))
-                    .stroke(.blue, lineWidth: 4)
+                    .stroke(Color.tripGreen, lineWidth: 4)
             }
 
             // Camera markers
             ForEach(viewModel.clusters) { cluster in
                 if cluster.cameras.count == 1 {
-                    // Single camera marker
                     let camera = cluster.primaryCamera
                     Annotation(
                         camera.name,
@@ -49,7 +53,6 @@ struct MapContainerView: View {
                     }
                     .tag(camera.id)
                 } else {
-                    // Cluster marker
                     Annotation(
                         "\(cluster.cameras.count) cameras",
                         coordinate: cluster.coordinate,
@@ -61,7 +64,6 @@ struct MapContainerView: View {
                 }
             }
 
-            // User location
             UserAnnotation()
         }
         .mapStyle(.standard(elevation: .realistic, pointsOfInterest: .excludingAll))
@@ -71,7 +73,6 @@ struct MapContainerView: View {
         }
         .onChange(of: selectedCameraId) { _, newValue in
             guard let id = newValue else { return }
-            // Find the camera across all clusters
             for cluster in viewModel.clusters {
                 if let camera = cluster.cameras.first(where: { $0.id == id }) {
                     viewModel.selectedCamera = camera
@@ -100,10 +101,9 @@ struct MapContainerView: View {
 
                 Image(systemName: "camera.fill")
                     .font(.system(size: 14))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.tripGreen)
             }
 
-            // Pin tail
             Triangle()
                 .fill(.white)
                 .frame(width: 10, height: 6)
@@ -117,7 +117,7 @@ struct MapContainerView: View {
         VStack(spacing: 0) {
             ZStack {
                 Circle()
-                    .fill(.blue)
+                    .fill(Color.tripGreen)
                     .frame(width: 36, height: 36)
                     .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
 
@@ -127,7 +127,7 @@ struct MapContainerView: View {
             }
 
             Triangle()
-                .fill(.blue)
+                .fill(Color.tripGreen)
                 .frame(width: 10, height: 6)
                 .shadow(color: .black.opacity(0.15), radius: 1, y: 1)
         }
@@ -137,7 +137,6 @@ struct MapContainerView: View {
 
     private var overlayControls: some View {
         VStack(spacing: 10) {
-            // Current location button
             Button {
                 locationService.requestPermission()
                 locationService.startUpdating()
@@ -154,20 +153,19 @@ struct MapContainerView: View {
             } label: {
                 Image(systemName: "location.fill")
                     .font(.system(size: 16))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.primary)
                     .frame(width: 40, height: 40)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                     .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
             }
 
-            // Fit route button
             if !viewModel.routeGeometry.isEmpty {
                 Button {
                     fitMapToRoute()
                 } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 16))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.primary)
                         .frame(width: 40, height: 40)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                         .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
@@ -175,7 +173,6 @@ struct MapContainerView: View {
             }
         }
         .padding(.trailing, 12)
-        .padding(.bottom, 20)
     }
 
     // MARK: - Helpers
@@ -228,10 +225,6 @@ struct Triangle: Shape {
 }
 
 #Preview {
-    NavigationStack {
-        MapContainerView()
-            .navigationTitle("Trip Cams")
-            .navigationBarTitleDisplayMode(.inline)
-    }
-    .environmentObject(TripViewModel())
+    MapContainerView()
+        .environmentObject(TripViewModel())
 }

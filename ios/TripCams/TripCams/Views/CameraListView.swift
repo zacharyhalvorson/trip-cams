@@ -7,122 +7,79 @@ import SwiftUI
 
 struct CameraListView: View {
     @EnvironmentObject private var viewModel: TripViewModel
+    var namespace: Namespace.ID?
 
     var body: some View {
-        Group {
-            if viewModel.cameras.isEmpty && !viewModel.isLoadingCameras {
-                emptyState
-            } else {
-                cameraList
-            }
-        }
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No Cameras", systemImage: "camera.badge.ellipsis")
-        } description: {
-            Text("Select a route to see highway cameras along the way.")
-        } actions: {
-            NavigationLink {
-                RouteSelectionView()
-                    .navigationTitle("Route")
-            } label: {
-                Text("Choose a Route")
-            }
-            .buttonStyle(.borderedProminent)
-        }
-    }
-
-    // MARK: - Camera List
-
-    private var cameraList: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
-                // Loading / status header
-                statusHeader
-
-                // Cluster sections
-                ForEach(viewModel.clusters) { cluster in
-                    clusterSection(cluster)
+            LazyVStack(spacing: 10) {
+                if viewModel.cameras.isEmpty && !viewModel.isLoadingCameras {
+                    emptyState
+                } else if viewModel.isLoadingCameras && viewModel.cameras.isEmpty {
+                    // Skeleton loading cards
+                    ForEach(0..<3, id: \.self) { _ in
+                        skeletonCard
+                    }
+                } else {
+                    ForEach(viewModel.clusters) { cluster in
+                        ForEach(cluster.cameras) { camera in
+                            // Hide card while its modal is open (matchedGeometryEffect source)
+                            if camera.id != viewModel.selectedCamera?.id {
+                                CameraCardView(camera: camera)
+                                    .applyMatchedGeometry(id: camera.id, namespace: namespace)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                                            viewModel.selectedCamera = camera
+                                        }
+                                    }
+                            } else {
+                                // Placeholder to maintain scroll position
+                                Color.clear
+                                    .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                            }
+                        }
+                    }
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
         .refreshable {
             await viewModel.refreshCameras()
         }
     }
 
-    // MARK: - Status Header
+    // MARK: - Skeleton Card
 
-    private var statusHeader: some View {
-        HStack(spacing: 8) {
-            if viewModel.isLoadingCameras {
-                ProgressView()
-                    .controlSize(.small)
-            } else {
-                Image(systemName: "camera.fill")
-                    .foregroundStyle(.secondary)
+    private var skeletonCard: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(Color(.tertiarySystemFill))
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .overlay {
+                ShimmerView()
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
             }
+    }
 
-            Text(viewModel.loadingProgress)
-                .font(.subheadline)
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "camera")
+                .font(.system(size: 36))
+                .foregroundStyle(.secondary.opacity(0.5))
+
+            Text("No cameras found")
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.secondary)
 
-            Spacer()
+            Text("Select a route using the picker above to see highway cameras.")
+                .font(.system(size: 13))
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(.bar)
+        .padding(.horizontal, 32)
+        .padding(.vertical, 48)
     }
-
-    // MARK: - Cluster Section
-
-    private func clusterSection(_ cluster: CameraCluster) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Cluster header for multi-camera clusters
-            if cluster.cameras.count > 1 {
-                HStack(spacing: 6) {
-                    Image(systemName: "camera.on.rectangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.tint)
-                    Text(cluster.name)
-                        .font(.subheadline.bold())
-                    Text("\(cluster.cameras.count) cameras")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .padding(.top, 16)
-                .padding(.bottom, 6)
-            }
-
-            // Camera cards
-            ForEach(cluster.cameras) { camera in
-                CameraCardView(camera: camera)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        viewModel.selectedCamera = camera
-                    }
-
-                if camera.id != cluster.cameras.last?.id {
-                    Divider()
-                        .padding(.leading, 88)
-                }
-            }
-
-            Divider()
-        }
-    }
-}
-
-#Preview {
-    NavigationStack {
-        CameraListView()
-            .navigationTitle("Cameras")
-    }
-    .environmentObject(TripViewModel())
 }

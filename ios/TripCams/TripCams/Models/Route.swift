@@ -21,7 +21,7 @@ struct Route: Codable, Identifiable {
     }
 }
 
-struct RouteStop: Codable, Identifiable, Equatable {
+struct RouteStop: Codable, Identifiable, Equatable, Hashable {
     let id: String
     let name: String
     let region: String

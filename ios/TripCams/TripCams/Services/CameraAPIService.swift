@@ -238,7 +238,7 @@ class CameraAPIService: ObservableObject {
 
     // MARK: - Normalization Router
 
-    private func normalize(data: Data, endpoint: CameraEndpoint) -> [Camera] {
+    nonisolated private func normalize(data: Data, endpoint: CameraEndpoint) -> [Camera] {
         switch endpoint.normalizer {
         case .alberta:
             return normalizeIBI(data: data, region: "AB")
@@ -267,7 +267,7 @@ class CameraAPIService: ObservableObject {
 
     // MARK: - Bundled Fallback
 
-    private func loadFallback(region: String) -> [Camera] {
+    nonisolated private func loadFallback(region: String) -> [Camera] {
         let filename = "cameras-\(region.lowercased())"
         guard let url = Bundle.main.url(forResource: filename, withExtension: "json"),
               let data = try? Data(contentsOf: url),
@@ -280,7 +280,7 @@ class CameraAPIService: ObservableObject {
     // MARK: - Normalizers
 
     /// IBI 511 normalizer. Used by AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, GA, WI, LA, AZ, ID, AK, UT, NV, CT.
-    private func normalizeIBI(data: Data, region: String) -> [Camera] {
+    nonisolated private func normalizeIBI(data: Data, region: String) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []
         }
@@ -333,7 +333,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// DriveBC format. GeoJSON-like array with nested location.coordinates.
-    private func normalizeBC(data: Data) -> [Camera] {
+    nonisolated private func normalizeBC(data: Data) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []
         }
@@ -351,13 +351,13 @@ class CameraAPIService: ObservableObject {
             let lon = coordinates[0]
             let lat = coordinates[1]
             let id = cam["id"] as? String ?? cam["id"].map { "\($0)" } ?? UUID().uuidString
-            let name = cam["camName"] as? String ?? ""
-            let highway = cam["caption"] as? String ?? ""
-            let isOn = cam["isOn"] as? Bool ?? true
+            let name = cam["name"] as? String ?? cam["camName"] as? String ?? ""
+            let highway = cam["caption"] as? String ?? cam["highway_description"] as? String ?? ""
+            let isOn = cam["is_on"] as? Bool ?? cam["isOn"] as? Bool ?? true
             let orientation = cam["orientation"] as? String ?? ""
 
             let links = cam["links"] as? [String: Any]
-            let imageSource = links?["imageSource"] as? String ?? ""
+            let imageSource = links?["imageDisplay"] as? String ?? links?["imageSource"] as? String ?? ""
             let imageThumbnail = links?["imageThumbnail"] as? String
 
             let imageUrl = imageSource.hasPrefix("http") ? imageSource : baseUrl + imageSource
@@ -378,7 +378,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// WSDOT format. Three possible API formats: mobile, ArcGIS, REST.
-    private func normalizeWA(data: Data) -> [Camera] {
+    nonisolated private func normalizeWA(data: Data) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) else {
             return []
         }
@@ -404,7 +404,7 @@ class CameraAPIService: ObservableObject {
         return []
     }
 
-    private func normalizeWAItems(_ items: [[String: Any]]) -> [Camera] {
+    nonisolated private func normalizeWAItems(_ items: [[String: Any]]) -> [Camera] {
         var cameras: [Camera] = []
 
         for item in items {
@@ -442,7 +442,7 @@ class CameraAPIService: ObservableObject {
         return cameras
     }
 
-    private func normalizeWAArcGIS(_ features: [[String: Any]]) -> [Camera] {
+    nonisolated private func normalizeWAArcGIS(_ features: [[String: Any]]) -> [Camera] {
         var cameras: [Camera] = []
 
         for feature in features {
@@ -472,7 +472,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// Quebec WFS GeoJSON format.
-    private func normalizeQC(data: Data) -> [Camera] {
+    nonisolated private func normalizeQC(data: Data) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let features = json["features"] as? [[String: Any]] else {
             return []
@@ -508,7 +508,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// Maryland JSON array format.
-    private func normalizeMD(data: Data) -> [Camera] {
+    nonisolated private func normalizeMD(data: Data) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []
         }
@@ -538,7 +538,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// Ohio OHGO format.
-    private func normalizeOH(data: Data) -> [Camera] {
+    nonisolated private func normalizeOH(data: Data) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) else {
             return []
         }
@@ -578,7 +578,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// North Dakota GeoJSON format.
-    private func normalizeND(data: Data) -> [Camera] {
+    nonisolated private func normalizeND(data: Data) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let features = json["features"] as? [[String: Any]] else {
             return []
@@ -612,7 +612,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// ArcGIS FeatureServer format. Used by OR, WY, KY, DE.
-    private func normalizeArcGIS(data: Data, region: String) -> [Camera] {
+    nonisolated private func normalizeArcGIS(data: Data, region: String) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let features = json["features"] as? [[String: Any]] else {
             return []
@@ -685,7 +685,7 @@ class CameraAPIService: ObservableObject {
     }
 
     /// California Caltrans per-district format.
-    private func normalizeCA(data: Data, district: Int) -> [Camera] {
+    nonisolated private func normalizeCA(data: Data, district: Int) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let dataArray = json["data"] as? [[String: Any]] else {
             return []

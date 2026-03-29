@@ -21,7 +21,10 @@
 		A1B2C3D4E5F6000100000C /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000200000C; };
 		A1B2C3D4E5F6000100000D /* GeocodingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000200000D; };
 		A1B2C3D4E5F6000100000E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000200000E; };
-		A1B2C3D4E5F6000100000F /* RouteSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000200000F; };
+		A1B2C3D4E5F600010000F1 /* Color+Trip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600020000F1; };
+		A1B2C3D4E5F600010000F2 /* RoutePickerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600020000F2; };
+		A1B2C3D4E5F600010000F3 /* StopPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600020000F3; };
+		A1B2C3D4E5F600010000F4 /* CameraImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600020000F4; };
 		A1B2C3D4E5F60001000010 /* CameraListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000010; };
 		A1B2C3D4E5F60001000011 /* CameraDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000011; };
 		A1B2C3D4E5F60001000012 /* CameraCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002000012; };
@@ -50,7 +53,10 @@
 		A1B2C3D4E5F6000200000C /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000200000D /* GeocodingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeocodingService.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000200000E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6000200000F /* RouteSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteSelectionView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F600020000F1 /* Color+Trip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Trip.swift"; sourceTree = "<group>"; };
+		A1B2C3D4E5F600020000F2 /* RoutePickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePickerOverlay.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F600020000F3 /* StopPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopPickerSheet.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F600020000F4 /* CameraImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraImageView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000010 /* CameraListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraListView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000011 /* CameraDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDetailView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002000012 /* CameraCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCardView.swift; sourceTree = "<group>"; };
@@ -144,7 +150,10 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6000200000E /* ContentView.swift */,
-				A1B2C3D4E5F6000200000F /* RouteSelectionView.swift */,
+				A1B2C3D4E5F600020000F1 /* Color+Trip.swift */,
+				A1B2C3D4E5F600020000F2 /* RoutePickerOverlay.swift */,
+				A1B2C3D4E5F600020000F3 /* StopPickerSheet.swift */,
+				A1B2C3D4E5F600020000F4 /* CameraImageView.swift */,
 				A1B2C3D4E5F60002000010 /* CameraListView.swift */,
 				A1B2C3D4E5F60002000011 /* CameraDetailView.swift */,
 				A1B2C3D4E5F60002000012 /* CameraCardView.swift */,
@@ -273,7 +282,10 @@
 				A1B2C3D4E5F6000100000C /* LocationService.swift in Sources */,
 				A1B2C3D4E5F6000100000D /* GeocodingService.swift in Sources */,
 				A1B2C3D4E5F6000100000E /* ContentView.swift in Sources */,
-				A1B2C3D4E5F6000100000F /* RouteSelectionView.swift in Sources */,
+				A1B2C3D4E5F600010000F1 /* Color+Trip.swift in Sources */,
+				A1B2C3D4E5F600010000F2 /* RoutePickerOverlay.swift in Sources */,
+				A1B2C3D4E5F600010000F3 /* StopPickerSheet.swift in Sources */,
+				A1B2C3D4E5F600010000F4 /* CameraImageView.swift in Sources */,
 				A1B2C3D4E5F60001000010 /* CameraListView.swift in Sources */,
 				A1B2C3D4E5F60001000011 /* CameraDetailView.swift in Sources */,
 				A1B2C3D4E5F60001000012 /* CameraCardView.swift in Sources */,

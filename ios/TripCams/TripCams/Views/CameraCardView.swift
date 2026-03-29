@@ -7,144 +7,109 @@ import SwiftUI
 
 struct CameraCardView: View {
     let camera: Camera
+    var showOverlay = true
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Camera thumbnail
-            cameraImage
-                .frame(width: 72, height: 54)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+        if camera.status == .inactive || camera.imageUrl.isEmpty {
+            disabledCard
+        } else {
+            imageCard
+        }
+    }
 
-            // Camera info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(camera.name)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(2)
-                    .foregroundStyle(.primary)
+    // MARK: - Image Card
 
-                HStack(spacing: 6) {
-                    // Highway badge
-                    if !camera.highway.isEmpty {
-                        Label(camera.highway, systemImage: "road.lanes")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+    private var imageCard: some View {
+        ZStack(alignment: .bottom) {
+            CameraImageView(urlString: camera.thumbnailUrl ?? camera.imageUrl)
+                .frame(maxWidth: .infinity)
+                .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                .clipped()
 
-                    // Direction badge
-                    if !camera.direction.isEmpty {
-                        Text(camera.direction)
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(.blue, in: Capsule())
-                    }
-                }
+            if showOverlay {
+                // Gradient + info only after layout
+                LinearGradient(
+                    colors: [.black.opacity(0.75), .clear],
+                    startPoint: .bottom,
+                    endPoint: .top
+                )
+                .frame(height: 70)
+                .allowsHitTesting(false)
 
-                HStack(spacing: 6) {
-                    // Region badge
+                HStack(alignment: .bottom, spacing: 8) {
                     Text(camera.region.uppercased())
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.tint)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(.tint.opacity(0.12), in: Capsule())
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.regionBadge(camera.region).opacity(0.85), in: Capsule())
 
-                    // Temperature
+                    Text(camera.name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+
+                    Spacer(minLength: 0)
+
                     if let temp = camera.temperature {
-                        Label(
-                            String(format: "%.0f\u{00B0}C", temp),
-                            systemImage: "thermometer.medium"
-                        )
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        Text(String(format: "%.0f\u{00B0}", temp))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
                     }
-
-                    Spacer()
                 }
+                .padding(.horizontal, 10)
+                .padding(.bottom, 8)
+                .allowsHitTesting(false)
             }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator).opacity(0.15), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Disabled Card
+
+    private var disabledCard: some View {
+        HStack(spacing: 8) {
+            Text(camera.region.uppercased())
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.regionBadge(camera.region).opacity(0.5), in: Capsule())
+
+            Text(camera.name)
+                .font(.system(size: 12, weight: .medium))
+                .lineLimit(1)
+                .foregroundStyle(.secondary)
 
             Spacer(minLength: 0)
 
-            // Chevron
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.quaternary)
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-    }
-
-    // MARK: - Camera Image
-
-    @ViewBuilder
-    private var cameraImage: some View {
-        let urlString = camera.thumbnailUrl ?? camera.imageUrl
-        if let url = URL(string: urlString) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    imagePlaceholder(systemName: "exclamationmark.triangle")
-                case .empty:
-                    imagePlaceholder(systemName: "camera")
-                        .overlay {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-                @unknown default:
-                    imagePlaceholder(systemName: "camera")
-                }
-            }
-        } else {
-            imagePlaceholder(systemName: "camera.fill")
-        }
-    }
-
-    private func imagePlaceholder(systemName: String) -> some View {
-        Rectangle()
-            .fill(.fill.tertiary)
-            .overlay {
-                Image(systemName: systemName)
-                    .font(.caption)
+            if camera.status == .inactive {
+                Text("Offline")
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        .opacity(0.55)
     }
 }
 
-#Preview {
-    VStack(spacing: 0) {
-        CameraCardView(camera: Camera(
-            id: "ab-123",
-            name: "Hwy 2 near Airdrie",
-            highway: "Hwy 2",
-            region: "ab",
-            lat: 51.29,
-            lon: -114.01,
-            imageUrl: "https://example.com/camera.jpg",
-            thumbnailUrl: nil,
-            status: .active,
-            direction: "NB",
-            lastUpdated: "2024-01-15T12:00:00Z",
-            temperature: -5.0
-        ))
-        Divider()
-        CameraCardView(camera: Camera(
-            id: "bc-456",
-            name: "Trans-Canada Hwy at Rogers Pass Summit",
-            highway: "Hwy 1",
-            region: "bc",
-            lat: 51.30,
-            lon: -117.52,
-            imageUrl: "https://example.com/camera2.jpg",
-            thumbnailUrl: nil,
-            status: .active,
-            direction: "EB",
-            lastUpdated: nil,
-            temperature: nil
-        ))
+// MARK: - Matched Geometry Helper
+
+extension View {
+    @ViewBuilder
+    func applyMatchedGeometry(id: String, namespace: Namespace.ID?) -> some View {
+        if let namespace {
+            self.matchedGeometryEffect(id: id, in: namespace)
+        } else {
+            self
+        }
     }
 }
