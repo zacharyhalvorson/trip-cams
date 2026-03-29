@@ -4,10 +4,9 @@
 
 const API = (() => {
   const CORS_PROXIES = [
+    url => `https://proxy.corsfix.com/?${url}`,
     url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
     url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    url => `https://cors.lol/?url=${encodeURIComponent(url)}`,
-    url => `https://proxy.cors.sh/${url}`,
   ];
 
   // ── Camera API Registry ────────────────────────────────────────
