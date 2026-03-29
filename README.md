@@ -55,7 +55,8 @@ road-trip-cameras/
 │   ├── region-bounds.json# Geographic bounds for all supported regions
 │   ├── cameras-ab.json   # Alberta camera fallback data
 │   └── cameras-bc.json   # BC camera fallback data
-└── img/                  # Icons, favicon, placeholder
+├── img/                  # Icons, favicon, placeholder
+└── ios/TripCams/         # Native iOS companion app (SwiftUI)
 ```
 
 ## How It Works
@@ -100,13 +101,20 @@ Camera data is cached with a stale-while-revalidate strategy: you see cached res
 | Georgia, Louisiana, Kentucky, Arkansas | State DOTs |
 | New York, Ohio, Maryland, Delaware | State DOTs |
 
+## iOS App
+
+A native iOS companion app lives in `ios/TripCams/`. Built with SwiftUI, it mirrors the web app's single-screen design: full-screen MapKit map, glassmorphic route picker overlay, draggable bottom sheet with camera cards, and a hero-animated image modal. Shares the same camera API sources and route data as the web app.
+
+Open `ios/TripCams/TripCams.xcodeproj` in Xcode to build and run.
+
 ## Tech Stack
 
-- **Vanilla JavaScript** — no frameworks, no bundler, no build step
-- **Leaflet** + **Leaflet.MarkerCluster** — interactive mapping
+- **Vanilla JavaScript** — no frameworks, no bundler, no build step (web)
+- **SwiftUI** + **MapKit** — native iOS app
+- **Leaflet** + **Leaflet.MarkerCluster** — interactive mapping (web)
 - **OSRM** — road geometry for route computation and corridor filtering
 - **Photon/Komoot** — geocoding for custom origin/destination search
-- **Service Worker** — tiered caching (API responses, images, map tiles)
+- **Service Worker** — tiered caching for API responses, images, map tiles (web)
 - **GitHub Pages** — automatic deployment via GitHub Actions
 
 ## Deployment
