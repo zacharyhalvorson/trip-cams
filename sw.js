@@ -180,6 +180,9 @@ async function staleWhileRevalidate(request) {
 function isApiRequest(url) {
   const host = url.hostname.toLowerCase();
   return host === 'corsproxy.io' ||
+    host === 'api.allorigins.win' ||
+    host === 'proxy.corsfix.com' ||
+    host.endsWith('.workers.dev') ||
     host === '511.alberta.ca' ||
     host === 'images.drivebc.ca' ||
     host.includes('wsdot') ||

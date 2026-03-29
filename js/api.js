@@ -3,8 +3,12 @@
    ============================================================= */
 
 const API = (() => {
-  const CORS_PROXY = 'https://corsproxy.io/?url=';
-  const CORS_PROXY_ALT = 'https://api.allorigins.win/raw?url=';
+  const CORS_PROXIES = [
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://cors.lol/?url=${encodeURIComponent(url)}`,
+    url => `https://proxy.cors.sh/${url}`,
+  ];
 
   // ── Camera API Registry ────────────────────────────────────────
   // Each entry: { url, normalizer, country, needsProxy }
@@ -293,12 +297,11 @@ const API = (() => {
     return { direct: slow ? 20000 : 10000, proxy: slow ? 25000 : 15000 };
   }
 
-  async function fetchWithProxy(url, options = {}) {
-    const proxied = CORS_PROXY + encodeURIComponent(url);
+  async function fetchDirect(url, options = {}) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), getTimeouts().proxy);
+    const timeout = setTimeout(() => controller.abort(), getTimeouts().direct);
     try {
-      const resp = await fetch(proxied, { ...options, signal: controller.signal });
+      const resp = await fetch(url, { ...options, signal: controller.signal });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return await parseJSON(resp);
     } finally {
@@ -306,11 +309,12 @@ const API = (() => {
     }
   }
 
-  async function fetchDirect(url, options = {}) {
+  async function fetchViaProxy(url, proxyFn, options = {}) {
+    const proxied = proxyFn(url);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), getTimeouts().direct);
+    const timeout = setTimeout(() => controller.abort(), getTimeouts().proxy);
     try {
-      const resp = await fetch(url, { ...options, signal: controller.signal });
+      const resp = await fetch(proxied, { ...options, signal: controller.signal });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return await parseJSON(resp);
     } finally {
@@ -328,29 +332,15 @@ const API = (() => {
     }
   }
 
-  async function fetchWithAltProxy(url, options = {}) {
-    const proxied = CORS_PROXY_ALT + encodeURIComponent(url);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), getTimeouts().proxy);
-    try {
-      const resp = await fetch(proxied, { ...options, signal: controller.signal });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      return await parseJSON(resp);
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  // Try direct, then primary proxy, then alt proxy
+  // Try direct, then each proxy in order
   async function fetchWithRetry(url) {
     try {
       return await fetchDirect(url);
     } catch (e) {
-      try {
-        return await fetchWithProxy(url);
-      } catch (e2) {
-        return await fetchWithAltProxy(url);
+      for (const proxyFn of CORS_PROXIES) {
+        try { return await fetchViaProxy(url, proxyFn); } catch (_) { /* next */ }
       }
+      throw e;
     }
   }
 
@@ -455,18 +445,24 @@ const API = (() => {
   async function tryUrlsTwoPhase(urls, region) {
     const label = region || 'multi-url';
     const errors = [];
-    const phases = [
-      ['direct', fetchDirect],
-      ['proxy', fetchWithProxy],
-      ['alt-proxy', fetchWithAltProxy],
-    ];
-    for (const [phase, fetchFn] of phases) {
+    // Phase 1: try all URLs direct (fast, no proxy overhead)
+    for (const url of urls) {
+      try {
+        const data = await fetchDirect(url);
+        if (data) return data;
+      } catch (e) {
+        errors.push(`direct ${url.split('?')[0]}: ${e.message}`);
+      }
+    }
+    // Phase 2+: try each proxy across all URLs
+    for (let i = 0; i < CORS_PROXIES.length; i++) {
+      const proxyFn = CORS_PROXIES[i];
       for (const url of urls) {
         try {
-          const data = await fetchFn(url);
+          const data = await fetchViaProxy(url, proxyFn);
           if (data) return data;
         } catch (e) {
-          errors.push(`${phase} ${url.split('?')[0]}: ${e.message}`);
+          errors.push(`proxy${i + 1} ${url.split('?')[0]}: ${e.message}`);
         }
       }
     }
