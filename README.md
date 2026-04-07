@@ -2,7 +2,7 @@
 
 **Live highway cameras along your driving route.**
 
-**Live site: [https://zacharyhalvorson.github.io/road-trip-cameras/](https://zacharyhalvorson.github.io/road-trip-cameras/)**
+**Live site: [https://tripcams.zacharyhalvorson.com](https://tripcams.zacharyhalvorson.com)**
 
 Trip Cams is a progressive web app that shows real-time highway camera feeds along any driving route across North America. Enter any origin and destination — or pick a predefined corridor — and instantly see what road conditions look like between here and there.
 
@@ -25,8 +25,8 @@ Trip Cams is a progressive web app that shows real-time highway camera feeds alo
 No build tools required. Trip Cams is a static site — just serve the files.
 
 ```bash
-git clone https://github.com/zacharyhalvorson/road-trip-cameras.git
-cd road-trip-cameras
+git clone https://github.com/zacharyhalvorson/trip-cams.git
+cd trip-cams
 
 # Use any local HTTP server
 python3 -m http.server 8000
@@ -39,7 +39,7 @@ Then open [http://localhost:8000](http://localhost:8000).
 ## Project Structure
 
 ```
-road-trip-cameras/
+trip-cams/
 ├── index.html            # Single-page entry point
 ├── manifest.json         # PWA manifest
 ├── sw.js                 # Service worker (offline + caching)
@@ -119,7 +119,7 @@ Open `ios/TripCams/TripCams.xcodeproj` in Xcode to build and run.
 
 ## Deployment
 
-Pushes to `main` trigger an automatic GitHub Pages deployment via the workflow in `.github/workflows/deploy.yml`.
+Pushes to `main` trigger an automatic GitHub Pages deployment via the workflow in `.github/workflows/deploy.yml`. The site is served at `tripcams.zacharyhalvorson.com` via a custom domain configured in the `CNAME` file.
 
 ## License
 

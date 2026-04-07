@@ -4,8 +4,8 @@
 
 const API = (() => {
   // Self-hosted Cloudflare Worker proxy (deploy cors-proxy/ to your account)
-  // Set to your worker URL, e.g. 'https://road-trip-cameras-cors.<you>.workers.dev'
-  const SELF_PROXY = 'https://road-trip-cameras-cors.road-trip-cameras-app.workers.dev';
+  // Set to your worker URL, e.g. 'https://trip-cams-cors.<you>.workers.dev'
+  const SELF_PROXY = 'https://trip-cams-cors.road-trip-cameras-app.workers.dev';
 
   const CORS_PROXIES = [
     // Self-hosted proxy is first when configured — most reliable, no rate limits

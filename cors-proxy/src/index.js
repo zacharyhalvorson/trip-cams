@@ -1,11 +1,11 @@
 /**
- * CORS Proxy for Road Trip Cameras
+ * CORS Proxy for Trip Cams
  *
  * Proxies requests to government camera APIs that don't support CORS.
  * Restricted to known camera API domains for security.
  *
  * Usage: https://<worker>.workers.dev/?<target-url>
- *   e.g. https://road-trip-cameras-cors.workers.dev/?https://511.alberta.ca/api/v2/get/cameras
+ *   e.g. https://trip-cams-cors.workers.dev/?https://511.alberta.ca/api/v2/get/cameras
  *
  * Deploy: cd cors-proxy && npx wrangler deploy
  */
