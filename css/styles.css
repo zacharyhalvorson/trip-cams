@@ -777,13 +777,11 @@ button {
 
 .sheet-handle {
   flex-shrink: 0;
-  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px 0;
   cursor: grab;
-  border-radius: 20px 20px 0 0;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--duration) var(--ease-out);
