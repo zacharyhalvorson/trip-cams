@@ -2491,14 +2491,12 @@ const App = (() => {
       console.warn('SW registration failed:', err);
     });
 
-    let reloading = false;
+    let _updateFallbackTimer = null;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (reloading) return;
-      reloading = true;
+      if (_updateFallbackTimer) clearTimeout(_updateFallbackTimer);
       window.location.reload();
     });
 
-    // Listen for notification click messages from service worker
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'NAVIGATE_INCIDENT') {
         _navigateToIncident(event.data.lat, event.data.lon, event.data.zoom);
@@ -2515,6 +2513,8 @@ const App = (() => {
     if (_waitingSW) {
       _waitingSW.postMessage({ type: 'SKIP_WAITING' });
     }
+    // Fallback if controllerchange doesn't fire (common in Safari)
+    _updateFallbackTimer = setTimeout(() => window.location.reload(), 2000);
   }
 
   // ── Incident Notifications ──────────────────────────────────

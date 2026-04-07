@@ -133,7 +133,9 @@ const TripMap = (() => {
     // OSRM expects coordinates as lon,lat pairs separated by semicolons
     const coords = waypoints.map(w => `${w.lon},${w.lat}`).join(';');
     const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-    const resp = await fetch(url);
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 8000);
+    const resp = await fetch(url, { signal: ac.signal }).finally(() => clearTimeout(timer));
     if (!resp.ok) throw new Error(`OSRM request failed: ${resp.status}`);
     const data = await resp.json();
     if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('No route found');
