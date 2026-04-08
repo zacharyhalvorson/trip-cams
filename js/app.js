@@ -2462,6 +2462,7 @@ const App = (() => {
   // ── Service Worker ───────────────────────────────────────────
 
   let _waitingSW = null;
+  let _updateFallbackTimer = null;
 
   function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
@@ -2469,6 +2470,19 @@ const App = (() => {
     navigator.serviceWorker.register('sw.js').then(reg => {
       // If a new SW is already waiting (e.g. from a previous page load)
       if (reg.waiting) {
+        // If we already tried SKIP_WAITING but the SW is still waiting
+        // (postMessage can silently fail in Safari/WebKit), retry once
+        // then force-unregister as a last resort
+        if (sessionStorage.getItem('sw-skip-waiting')) {
+          sessionStorage.removeItem('sw-skip-waiting');
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          setTimeout(() => {
+            if (reg.waiting) {
+              reg.unregister().then(() => window.location.reload());
+            }
+          }, 1000);
+          return;
+        }
         _showUpdateBanner(reg.waiting);
       }
 
@@ -2486,8 +2500,8 @@ const App = (() => {
       console.warn('SW registration failed:', err);
     });
 
-    let _updateFallbackTimer = null;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      sessionStorage.removeItem('sw-skip-waiting');
       if (_updateFallbackTimer) clearTimeout(_updateFallbackTimer);
       window.location.reload();
     });
@@ -2505,10 +2519,14 @@ const App = (() => {
   }
 
   function _applyUpdate() {
+    dom.updateBanner.classList.remove('visible');
     if (_waitingSW) {
       _waitingSW.postMessage({ type: 'SKIP_WAITING' });
     }
-    // Fallback if controllerchange doesn't fire (common in Safari)
+    // Track that we initiated skip-waiting, so we can detect if it
+    // silently failed after the page reloads (common in Safari/WebKit)
+    sessionStorage.setItem('sw-skip-waiting', '1');
+    // Fallback if controllerchange doesn't fire
     _updateFallbackTimer = setTimeout(() => window.location.reload(), 2000);
   }
 
