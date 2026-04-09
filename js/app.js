@@ -1941,14 +1941,15 @@ const App = (() => {
         return;
       }
 
-      // Sheet is revealed — scrolling down past the top collapses it.
-      // Grace period: after reveal, ignore collapse via wheel for 600ms.
-      // With macOS natural scrolling, deltaY > 0 = fingers UP = scroll UP,
-      // so a second scroll-up gesture right after reveal would otherwise
-      // immediately collapse the sheet.
-      if (list.scrollTop <= 0 && e.deltaY > 0 && Date.now() - sheetRevealedAt > 600) {
+      // Sheet is revealed — scrolling up past the top collapses it.
+      // deltaY < 0 = scroll up (decrease scrollTop). When already at the top,
+      // continued scroll-up means the user wants to dismiss the sheet — same
+      // gesture as the touch handler's "finger moves down → collapse".
+      // Grace period: ignore collapse for 600ms after reveal so momentum
+      // from the reveal gesture doesn't immediately collapse.
+      if (list.scrollTop <= 0 && e.deltaY < 0 && Date.now() - sheetRevealedAt > 600) {
         if (wheelCooldown) { e.preventDefault(); return; }
-        wheelAccum += e.deltaY;
+        wheelAccum += Math.abs(e.deltaY);
         e.preventDefault();
         e.stopPropagation();
         if (wheelAccum >= WHEEL_THRESHOLD) {
@@ -1957,7 +1958,7 @@ const App = (() => {
           collapseSheet();
         }
       } else {
-        // Scrolling mid-list or upward — let native scroll handle it
+        // Scrolling into the list or mid-list — let native scroll handle it
         wheelAccum = 0;
       }
     }, { capture: true, passive: false });
