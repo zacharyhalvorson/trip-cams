@@ -1066,7 +1066,7 @@ const App = (() => {
     // Quick check: skip expensive sort+render if camera set hasn't changed.
     // Always re-render when empty so the "No cameras found" state can appear.
     const idSet = cameras.map(c => c.id).join(',');
-    if (idSet.length > 0 && idSet === _lastFilteredIds) {
+    if (cameras.length > 0 && idSet === _lastFilteredIds) {
       return; // Same cameras — no sort or DOM work needed
     }
 
