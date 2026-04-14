@@ -798,53 +798,62 @@ const App = (() => {
   // Primary camera loading path for custom routes. Called immediately with
   // straight-line waypoints, then OSRM geometry re-filters when it arrives.
   async function loadCamerasForGeometry(generation) {
-    const filterPath = currentRouteGeometry || currentWaypoints;
-    if (!filterPath || filterPath.length === 0) return;
-    // Interpolate sparse waypoints so region detection finds intermediate regions
-    const regionPath = filterPath.length < 10 ? _interpolateWaypoints(filterPath, 20) : filterPath;
+    try {
+      const filterPath = currentRouteGeometry || currentWaypoints;
+      if (!filterPath || filterPath.length === 0) return;
+      // Interpolate sparse waypoints so region detection finds intermediate regions
+      const regionPath = filterPath.length < 10 ? _interpolateWaypoints(filterPath, 20) : filterPath;
 
-    // Show cached cameras instantly while region detection hits the network
-    const cachedCameras = API.getCachedImmediate(null);
-    if (cachedCameras && generation === _routeGeneration) {
-      allCameras = cachedCameras;
+      // Show cached cameras instantly while region detection hits the network
+      const cachedCameras = API.getCachedImmediate(null);
+      if (cachedCameras && generation === _routeGeneration) {
+        allCameras = cachedCameras;
+        _lastFilteredIds = '';
+        applyFilters();
+        dom.skeletonList.classList.add('hidden');
+      }
+
+      const neededRegions = await API.getRegionsForRoute(regionPath);
+      if (generation !== _routeGeneration) return; // Route changed while detecting regions
+      if (neededRegions.size === 0) {
+        _lastFilteredIds = '';
+        applyFilters();
+        dom.skeletonList.classList.add('hidden');
+        return;
+      }
+
+      // Force re-render since we have new geometry
+      _lastFilteredIds = '';
+
+      // Fetch cameras for detected regions
+      const freshCameras = [];
+      const debounce = _debouncedApplyFilters(generation, 150);
+      await API.fetchProgressive((region, result) => {
+        if (generation !== _routeGeneration) return; // Stale
+        freshCameras.push(...(result.data || []));
+        allCameras = freshCameras;
+        _lastFilteredIds = ''; // Force re-filter with each new batch
+        debounce.schedule();
+      }, neededRegions);
+      debounce.flush();
+
+      if (generation !== _routeGeneration) return; // Route changed during fetch
+      if (freshCameras.length > 0) {
+        allCameras = freshCameras;
+        _lastFilteredIds = '';
+      }
+      applyFilters();
+
+      dom.skeletonList.classList.add('hidden');
+
+      // Auto-open camera from URL hash
+      requestAnimationFrame(() => _openCameraFromHash());
+    } catch (e) {
+      console.warn('Camera loading failed:', e.message);
       _lastFilteredIds = '';
       applyFilters();
       dom.skeletonList.classList.add('hidden');
     }
-
-    const neededRegions = await API.getRegionsForRoute(regionPath);
-    if (generation !== _routeGeneration) return; // Route changed while detecting regions
-    if (neededRegions.size === 0) {
-      dom.skeletonList.classList.add('hidden');
-      return;
-    }
-
-    // Force re-render since we have new geometry
-    _lastFilteredIds = '';
-
-    // Fetch cameras for detected regions
-    const freshCameras = [];
-    const debounce = _debouncedApplyFilters(generation, 150);
-    await API.fetchProgressive((region, result) => {
-      if (generation !== _routeGeneration) return; // Stale
-      freshCameras.push(...(result.data || []));
-      allCameras = freshCameras;
-      _lastFilteredIds = ''; // Force re-filter with each new batch
-      debounce.schedule();
-    }, neededRegions);
-    debounce.flush();
-
-    if (generation !== _routeGeneration) return; // Route changed during fetch
-    if (freshCameras.length > 0) {
-      allCameras = freshCameras;
-      _lastFilteredIds = '';
-      applyFilters();
-    }
-
-    dom.skeletonList.classList.add('hidden');
-
-    // Auto-open camera from URL hash
-    requestAnimationFrame(() => _openCameraFromHash());
   }
 
   // ── Highlight + scroll helper ───────────────────────────────
