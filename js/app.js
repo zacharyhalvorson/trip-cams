@@ -296,17 +296,24 @@ const App = (() => {
             if (city) {
               userLocation.city = city;
               if (fromStop && fromStop.source !== 'geocode' && fromStop.source !== 'geolocation' && !_prefsOrHashSetOrigin) {
-                fromStop = city;
-                const majorCityIds = ['calgary', 'vancouver', 'seattle', 'kamloops', 'kelowna', 'vernon', 'penticton', 'lethbridge', 'bellingham', 'nelson', 'cranbrook'];
-                const majorStops = allStops.filter(s => majorCityIds.includes(s.id) && Cameras.haversine(latitude, longitude, s.lat, s.lon) > 50);
-                if (majorStops.length > 0) {
-                  toStop = Cameras.nearestStop(latitude, longitude, majorStops);
+                // Only auto-set route if user is reasonably close to predefined stops.
+                // If >500km from all stops, skip auto-routing — a cross-continent
+                // route to western Canada is useless. Let the user pick via search.
+                const nearestAny = Cameras.nearestStop(latitude, longitude, allStops);
+                const distToNearest = nearestAny ? Cameras.haversine(latitude, longitude, nearestAny.lat, nearestAny.lon) : Infinity;
+                if (distToNearest <= 500) {
+                  fromStop = city;
+                  const majorCityIds = ['calgary', 'vancouver', 'seattle', 'kamloops', 'kelowna', 'vernon', 'penticton', 'lethbridge', 'bellingham', 'nelson', 'cranbrook'];
+                  const majorStops = allStops.filter(s => majorCityIds.includes(s.id) && Cameras.haversine(latitude, longitude, s.lat, s.lon) > 50);
+                  if (majorStops.length > 0) {
+                    toStop = Cameras.nearestStop(latitude, longitude, majorStops);
+                  }
+                  updateRouteDisplay();
+                  updateRoute();
+                  loadCameras();
+                  updateHash();
+                  savePrefs();
                 }
-                updateRouteDisplay();
-                updateRoute();
-                loadCameras();
-                updateHash();
-                savePrefs();
               } else if (fromStop && fromStop.source === 'geolocation') {
                 fromStop.displayName = city.displayName;
                 updateRouteDisplay();
@@ -1056,9 +1063,10 @@ const App = (() => {
       ? Cameras.filterByCorridor(allCameras, reducedPath, buffer)
       : allCameras;
 
-    // Quick check: skip expensive sort+render if camera set hasn't changed
+    // Quick check: skip expensive sort+render if camera set hasn't changed.
+    // Always re-render when empty so the "No cameras found" state can appear.
     const idSet = cameras.map(c => c.id).join(',');
-    if (idSet === _lastFilteredIds) {
+    if (idSet.length > 0 && idSet === _lastFilteredIds) {
       return; // Same cameras — no sort or DOM work needed
     }
 
