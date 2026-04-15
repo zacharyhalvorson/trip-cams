@@ -228,12 +228,25 @@ const Cameras = (() => {
       }));
   }
 
+  // Unwrap IBI 511 responses — some deployments return a raw array, others wrap
+  // it in an object under keys like 'body', 'cameras', or 'data'.
+  function unwrapIBI(data) {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      for (const key of ['body', 'cameras', 'data', 'results', 'items']) {
+        if (Array.isArray(data[key])) return data[key];
+      }
+    }
+    return [];
+  }
+
   // Generic IBI 511 normalizer — same format as Alberta but with configurable region code
   function normalizeIBI(data, region) {
-    if (!Array.isArray(data)) return [];
+    const items = unwrapIBI(data);
+    if (items.length === 0) return [];
     const prefix = region.toLowerCase();
     const cameras = [];
-    for (const cam of data) {
+    for (const cam of items) {
       if (!cam.Latitude || !cam.Longitude) continue;
       const views = cam.Views || [];
       for (const view of views) {
