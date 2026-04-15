@@ -79,5 +79,5 @@ The bottom sheet is a custom implementation (not `.sheet()`) specifically so tha
 
 ## Shared External Dependencies
 
-- **Camera APIs**: 40+ DOT APIs — IBI 511 (AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, NJ, PA, CT, GA, FL, SC, WI, LA, MN, IA, NE, AZ, CO, NM, MT, ID, AK, UT, NV), DriveBC, WSDOT, Caltrans (12 districts), ArcGIS (OR, WY, KY, DE), custom (MD, OH, ND, QC). Web uses corsproxy.io for CORS; iOS fetches directly.
+- **Camera APIs**: 40+ DOT APIs — IBI 511 (AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, NJ, PA, CT, MA, GA, FL, SC, WI, LA, MN, IA, NE, AZ, CO, NM, MT, ID, AK, UT, NV, IN, IL, WV), DriveBC, WSDOT, Caltrans (12 districts), ArcGIS (OR, WY, KY, DE), custom (MD, OH, ND, QC). Web uses corsproxy.io for CORS; iOS fetches directly.
 - **OSRM**: Road geometry for route polylines

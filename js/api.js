@@ -57,6 +57,10 @@ const API = (() => {
     AK: { url: 'https://511.alaska.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     UT: { url: 'https://udottraffic.utah.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     NV: { url: 'https://nvroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    MA: { url: 'https://mass511.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    IN: { url: 'https://511in.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    WV: { url: 'https://wv511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
 
     // ── US: Custom formats ──
     WA: {
@@ -120,6 +124,10 @@ const API = (() => {
     AK: { url: 'https://511.alaska.gov/api/v2/get/event' },
     UT: { url: 'https://udottraffic.utah.gov/api/v2/get/event' },
     NV: { url: 'https://nvroads.com/api/v2/get/event' },
+    MA: { url: 'https://mass511.com/api/v2/get/event' },
+    IN: { url: 'https://511in.org/api/v2/get/event' },
+    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/event' },
+    WV: { url: 'https://wv511.org/api/v2/get/event' },
     // US — Custom formats
     WA: { url: 'https://data.wsdot.wa.gov/mobile/HighwayAlerts.json' },
     OR: { url: 'https://tripcheck.com/Scripts/map/data/incidents.js' },

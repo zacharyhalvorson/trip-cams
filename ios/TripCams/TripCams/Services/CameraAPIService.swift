@@ -94,6 +94,10 @@ class CameraAPIService: ObservableObject {
         CameraEndpoint(code: "AK", urls: ["https://511.alaska.gov/api/v2/get/cameras"], normalizer: .ibi("AK")),
         CameraEndpoint(code: "UT", urls: ["https://udottraffic.utah.gov/api/v2/get/cameras"], normalizer: .ibi("UT")),
         CameraEndpoint(code: "NV", urls: ["https://nvroads.com/api/v2/get/cameras"], normalizer: .ibi("NV")),
+        CameraEndpoint(code: "MA", urls: ["https://mass511.com/api/v2/get/cameras"], normalizer: .ibi("MA")),
+        CameraEndpoint(code: "IN", urls: ["https://511in.org/api/v2/get/cameras"], normalizer: .ibi("IN")),
+        CameraEndpoint(code: "IL", urls: ["https://www.gettingaroundillinois.com/api/v2/get/cameras"], normalizer: .ibi("IL")),
+        CameraEndpoint(code: "WV", urls: ["https://wv511.org/api/v2/get/cameras"], normalizer: .ibi("WV")),
 
         // US – Custom
         CameraEndpoint(code: "WA", urls: [
@@ -289,7 +293,7 @@ class CameraAPIService: ObservableObject {
 
     // MARK: - Normalizers
 
-    /// IBI 511 normalizer. Used by AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, NJ, PA, CT, GA, FL, SC, WI, LA, MN, IA, NE, AZ, CO, NM, MT, ID, AK, UT, NV.
+    /// IBI 511 normalizer. Used by AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, NJ, PA, CT, MA, GA, FL, SC, WI, LA, MN, IA, NE, AZ, CO, NM, MT, ID, AK, UT, NV, IN, IL, WV.
     nonisolated private func normalizeIBI(data: Data, region: String) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []
