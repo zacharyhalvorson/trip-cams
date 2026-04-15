@@ -456,7 +456,11 @@ const Cameras = (() => {
 
   // Regions that use IBI 511 and may include urban intersection cameras
   const IBI_REGIONS = new Set(['AB', 'SK', 'MB', 'ON', 'NB', 'NS', 'PE', 'NL', 'YT',
-    'NY', 'GA', 'WI', 'LA', 'AZ', 'ID', 'AK', 'UT', 'NV', 'CT']);
+    'NY', 'NJ', 'PA', 'CT', 'MA', 'VT', 'NH', 'ME',
+    'GA', 'FL', 'SC', 'NC', 'VA', 'WV',
+    'WI', 'IL', 'IN', 'MI', 'MN', 'IA', 'MO', 'NE', 'KS', 'SD',
+    'LA', 'TX', 'OK', 'AR', 'MS', 'AL', 'TN',
+    'AZ', 'CO', 'NM', 'MT', 'ID', 'AK', 'UT', 'NV']);
 
   function isHighwayCamera(cam) {
     // For IBI 511 regions, apply highway keyword filtering to reduce urban cameras

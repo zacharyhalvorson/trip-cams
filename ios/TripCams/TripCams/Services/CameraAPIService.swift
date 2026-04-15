@@ -75,15 +75,44 @@ class CameraAPIService: ObservableObject {
 
         // US – IBI 511
         CameraEndpoint(code: "NY", urls: ["https://511ny.org/api/v2/get/cameras"], normalizer: .ibi("NY")),
+        CameraEndpoint(code: "NJ", urls: ["https://511nj.org/api/v2/get/cameras"], normalizer: .ibi("NJ")),
+        CameraEndpoint(code: "PA", urls: ["https://511pa.com/api/v2/get/cameras"], normalizer: .ibi("PA")),
+        CameraEndpoint(code: "CT", urls: ["https://portal.ct.gov/dot-511/api/v2/get/cameras"], normalizer: .ibi("CT")),
         CameraEndpoint(code: "GA", urls: ["https://511ga.org/api/v2/get/cameras"], normalizer: .ibi("GA")),
+        CameraEndpoint(code: "FL", urls: ["https://fl511.com/api/v2/get/cameras"], normalizer: .ibi("FL")),
+        CameraEndpoint(code: "SC", urls: ["https://511sc.org/api/v2/get/cameras"], normalizer: .ibi("SC")),
         CameraEndpoint(code: "WI", urls: ["https://511wi.gov/api/v2/get/cameras"], normalizer: .ibi("WI")),
         CameraEndpoint(code: "LA", urls: ["https://511la.org/api/v2/get/cameras"], normalizer: .ibi("LA")),
+        CameraEndpoint(code: "MN", urls: ["https://511mn.org/api/v2/get/cameras"], normalizer: .ibi("MN")),
+        CameraEndpoint(code: "IA", urls: ["https://511ia.org/api/v2/get/cameras"], normalizer: .ibi("IA")),
+        CameraEndpoint(code: "NE", urls: ["https://511.nebraska.gov/api/v2/get/cameras"], normalizer: .ibi("NE")),
         CameraEndpoint(code: "AZ", urls: ["https://az511.gov/api/v2/get/cameras"], normalizer: .ibi("AZ")),
+        CameraEndpoint(code: "CO", urls: ["https://www.cotrip.org/api/v2/get/cameras"], normalizer: .ibi("CO")),
+        CameraEndpoint(code: "NM", urls: ["https://nmroads.com/api/v2/get/cameras"], normalizer: .ibi("NM")),
+        CameraEndpoint(code: "MT", urls: ["https://www.511mt.net/api/v2/get/cameras"], normalizer: .ibi("MT")),
         CameraEndpoint(code: "ID", urls: ["https://511.idaho.gov/api/v2/get/cameras"], normalizer: .ibi("ID")),
         CameraEndpoint(code: "AK", urls: ["https://511.alaska.gov/api/v2/get/cameras"], normalizer: .ibi("AK")),
         CameraEndpoint(code: "UT", urls: ["https://udottraffic.utah.gov/api/v2/get/cameras"], normalizer: .ibi("UT")),
         CameraEndpoint(code: "NV", urls: ["https://nvroads.com/api/v2/get/cameras"], normalizer: .ibi("NV")),
-        CameraEndpoint(code: "CT", urls: ["https://portal.ct.gov/dot-511/api/v2/get/cameras"], normalizer: .ibi("CT")),
+        CameraEndpoint(code: "MA", urls: ["https://mass511.com/api/v2/get/cameras"], normalizer: .ibi("MA")),
+        CameraEndpoint(code: "IN", urls: ["https://511in.org/api/v2/get/cameras"], normalizer: .ibi("IN")),
+        CameraEndpoint(code: "IL", urls: ["https://www.gettingaroundillinois.com/api/v2/get/cameras"], normalizer: .ibi("IL")),
+        CameraEndpoint(code: "WV", urls: ["https://wv511.org/api/v2/get/cameras"], normalizer: .ibi("WV")),
+        CameraEndpoint(code: "VT", urls: ["https://www.newengland511.org/api/v2/get/cameras"], normalizer: .ibi("VT")),
+        CameraEndpoint(code: "NH", urls: ["https://www.newengland511.org/api/v2/get/cameras"], normalizer: .ibi("NH")),
+        CameraEndpoint(code: "ME", urls: ["https://www.newengland511.org/api/v2/get/cameras"], normalizer: .ibi("ME")),
+        CameraEndpoint(code: "SD", urls: ["https://www.sd511.org/api/v2/get/cameras"], normalizer: .ibi("SD")),
+        CameraEndpoint(code: "KS", urls: ["https://kandrive.gov/api/v2/get/cameras"], normalizer: .ibi("KS")),
+        CameraEndpoint(code: "OK", urls: ["https://oktraffic.org/api/v2/get/cameras"], normalizer: .ibi("OK")),
+        CameraEndpoint(code: "VA", urls: ["https://www.511virginia.org/api/v2/get/cameras"], normalizer: .ibi("VA")),
+        CameraEndpoint(code: "NC", urls: ["https://drivenc.gov/api/v2/get/cameras"], normalizer: .ibi("NC")),
+        CameraEndpoint(code: "TN", urls: ["https://smartway.tn.gov/api/v2/get/cameras"], normalizer: .ibi("TN")),
+        CameraEndpoint(code: "MO", urls: ["https://traveler.modot.org/api/v2/get/cameras"], normalizer: .ibi("MO")),
+        CameraEndpoint(code: "MI", urls: ["https://mi511.org/api/v2/get/cameras"], normalizer: .ibi("MI")),
+        CameraEndpoint(code: "AL", urls: ["https://algotraffic.com/api/v2/get/cameras"], normalizer: .ibi("AL")),
+        CameraEndpoint(code: "MS", urls: ["https://mdottraffic.com/api/v2/get/cameras"], normalizer: .ibi("MS")),
+        CameraEndpoint(code: "AR", urls: ["https://idrivearkansas.com/api/v2/get/cameras"], normalizer: .ibi("AR")),
+        CameraEndpoint(code: "TX", urls: ["https://drivetexas.org/api/v2/get/cameras"], normalizer: .ibi("TX")),
 
         // US – Custom
         CameraEndpoint(code: "WA", urls: [
@@ -279,7 +308,7 @@ class CameraAPIService: ObservableObject {
 
     // MARK: - Normalizers
 
-    /// IBI 511 normalizer. Used by AB, SK, MB, ON, NB, NS, PE, NL, YT, NY, GA, WI, LA, AZ, ID, AK, UT, NV, CT.
+    /// IBI 511 normalizer. Used by all IBI-pattern regions (AB, SK, MB, ON, NB, NS, PE, NL, YT + 30 US states).
     nonisolated private func normalizeIBI(data: Data, region: String) -> [Camera] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []

@@ -846,7 +846,17 @@ const App = (() => {
 
       if (generation !== _routeGeneration) return; // Route changed during fetch
       if (freshCameras.length > 0) {
-        allCameras = freshCameras;
+        // Deduplicate cameras from multi-state APIs (e.g., newengland511 covers VT/NH/ME).
+        // When a route crosses multiple states served by the same API, the same physical
+        // cameras get fetched once per state with different region prefixes. Dedup by lat/lon.
+        const seen = new Set();
+        allCameras = freshCameras.filter(cam => {
+          if (cam.lat == null || cam.lon == null) return true;
+          const key = `${cam.lat.toFixed(4)},${cam.lon.toFixed(4)},${cam.imageUrl}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         _lastFilteredIds = '';
       }
       applyFilters();

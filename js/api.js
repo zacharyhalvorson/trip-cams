@@ -38,15 +38,47 @@ const API = (() => {
 
     // ── US: IBI 511 Platform ──
     NY: { url: 'https://511ny.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    NJ: { url: 'https://511nj.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    PA: { url: 'https://511pa.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    CT: { url: 'https://ctroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     GA: { url: 'https://511ga.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    FL: { url: 'https://fl511.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    SC: { url: 'https://511sc.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     WI: { url: 'https://511wi.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     LA: { url: 'https://511la.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    MN: { url: 'https://511mn.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    IA: { url: 'https://511ia.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    NE: { url: 'https://511.nebraska.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     AZ: { url: 'https://az511.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    CO: { url: 'https://www.cotrip.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    NM: { url: 'https://nmroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    MT: { url: 'https://www.511mt.net/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     ID: { url: 'https://511.idaho.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     AK: { url: 'https://511.alaska.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     UT: { url: 'https://udottraffic.utah.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
     NV: { url: 'https://nvroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    CT: { url: 'https://ctroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    MA: { url: 'https://mass511.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    IN: { url: 'https://511in.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    WV: { url: 'https://wv511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+
+    // ── US: IBI 511 — regional / less certain ──
+    // These use the standard IBI pattern; the app degrades gracefully if they don't respond.
+    VT: { url: 'https://www.newengland511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    NH: { url: 'https://www.newengland511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    ME: { url: 'https://www.newengland511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    SD: { url: 'https://www.sd511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    KS: { url: 'https://kandrive.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    OK: { url: 'https://oktraffic.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    VA: { url: 'https://www.511virginia.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    NC: { url: 'https://drivenc.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    TN: { url: 'https://smartway.tn.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    MO: { url: 'https://traveler.modot.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    MI: { url: 'https://mi511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    AL: { url: 'https://algotraffic.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    MS: { url: 'https://mdottraffic.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    AR: { url: 'https://idrivearkansas.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    TX: { url: 'https://drivetexas.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
 
     // ── US: Custom formats ──
     WA: {
@@ -91,15 +123,44 @@ const API = (() => {
     BC: { url: 'https://www.drivebc.ca/api/events/' },
     // US — IBI 511
     NY: { url: 'https://511ny.org/api/v2/get/event' },
+    NJ: { url: 'https://511nj.org/api/v2/get/event' },
+    PA: { url: 'https://511pa.com/api/v2/get/event' },
+    CT: { url: 'https://ctroads.com/api/v2/get/event' },
     GA: { url: 'https://511ga.org/api/v2/get/event' },
+    FL: { url: 'https://fl511.com/api/v2/get/event' },
+    SC: { url: 'https://511sc.org/api/v2/get/event' },
     WI: { url: 'https://511wi.gov/api/v2/get/event' },
     LA: { url: 'https://511la.org/api/v2/get/event' },
+    MN: { url: 'https://511mn.org/api/v2/get/event' },
+    IA: { url: 'https://511ia.org/api/v2/get/event' },
+    NE: { url: 'https://511.nebraska.gov/api/v2/get/event' },
     AZ: { url: 'https://az511.com/api/v2/get/event' },
+    CO: { url: 'https://www.cotrip.org/api/v2/get/event' },
+    NM: { url: 'https://nmroads.com/api/v2/get/event' },
+    MT: { url: 'https://www.511mt.net/api/v2/get/event' },
     ID: { url: 'https://511.idaho.gov/api/v2/get/event' },
     AK: { url: 'https://511.alaska.gov/api/v2/get/event' },
     UT: { url: 'https://udottraffic.utah.gov/api/v2/get/event' },
     NV: { url: 'https://nvroads.com/api/v2/get/event' },
-    CT: { url: 'https://ctroads.com/api/v2/get/event' },
+    MA: { url: 'https://mass511.com/api/v2/get/event' },
+    IN: { url: 'https://511in.org/api/v2/get/event' },
+    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/event' },
+    WV: { url: 'https://wv511.org/api/v2/get/event' },
+    VT: { url: 'https://www.newengland511.org/api/v2/get/event' },
+    NH: { url: 'https://www.newengland511.org/api/v2/get/event' },
+    ME: { url: 'https://www.newengland511.org/api/v2/get/event' },
+    SD: { url: 'https://www.sd511.org/api/v2/get/event' },
+    KS: { url: 'https://kandrive.gov/api/v2/get/event' },
+    OK: { url: 'https://oktraffic.org/api/v2/get/event' },
+    VA: { url: 'https://www.511virginia.org/api/v2/get/event' },
+    NC: { url: 'https://drivenc.gov/api/v2/get/event' },
+    TN: { url: 'https://smartway.tn.gov/api/v2/get/event' },
+    MO: { url: 'https://traveler.modot.org/api/v2/get/event' },
+    MI: { url: 'https://mi511.org/api/v2/get/event' },
+    AL: { url: 'https://algotraffic.com/api/v2/get/event' },
+    MS: { url: 'https://mdottraffic.com/api/v2/get/event' },
+    AR: { url: 'https://idrivearkansas.com/api/v2/get/event' },
+    TX: { url: 'https://drivetexas.org/api/v2/get/event' },
     // US — Custom formats
     WA: { url: 'https://data.wsdot.wa.gov/mobile/HighwayAlerts.json' },
     OR: { url: 'https://tripcheck.com/Scripts/map/data/incidents.js' },
@@ -581,9 +642,9 @@ const API = (() => {
 
   // ── Progressive fetching ───────────────────────────────────────
 
-  // Fetch regions progressively, calling onRegion as each completes
-  // neededRegions: Set of region codes to fetch
-  // Batches requests to avoid overwhelming connections (max 4 concurrent)
+  // Fetch regions progressively, calling onRegion as each completes.
+  // Deduplicates by URL so multi-state APIs (e.g., newengland511 for VT/NH/ME)
+  // are only fetched once, with the result fanned out to all matching regions.
   async function fetchProgressive(onRegion, neededRegions) {
     const regions = neededRegions
       ? [...neededRegions].filter(r => CAMERA_REGISTRY[r])
@@ -591,14 +652,31 @@ const API = (() => {
 
     if (regions.length === 0) return;
 
+    // Group regions that share the same URL so we fetch once per unique endpoint.
+    const urlToRegions = new Map();
+    const uniqueRegions = [];
+    for (const key of regions) {
+      const entry = CAMERA_REGISTRY[key];
+      const url = entry.url || (entry.urls && entry.urls[0]) || key;
+      if (urlToRegions.has(url)) {
+        urlToRegions.get(url).push(key);
+      } else {
+        urlToRegions.set(url, [key]);
+        uniqueRegions.push(key); // first region for this URL does the fetch
+      }
+    }
+
     const BATCH_SIZE = isSlowConnection() ? 3 : 8;
-    for (let i = 0; i < regions.length; i += BATCH_SIZE) {
-      const batch = regions.slice(i, i + BATCH_SIZE);
-      const fetchers = batch.map(key =>
-        fetchRegisteredRegion(key)
+    for (let i = 0; i < uniqueRegions.length; i += BATCH_SIZE) {
+      const batch = uniqueRegions.slice(i, i + BATCH_SIZE);
+      const fetchers = batch.map(key => {
+        const entry = CAMERA_REGISTRY[key];
+        const url = entry.url || (entry.urls && entry.urls[0]) || key;
+        const siblings = urlToRegions.get(url);
+        return fetchRegisteredRegion(key)
           .then(r => { onRegion(key, r); return r; })
-          .catch(e => { onRegion(key, { data: [], fromCache: true, error: e.message }); })
-      );
+          .catch(e => { onRegion(key, { data: [], fromCache: true, error: e.message }); });
+      });
       await Promise.allSettled(fetchers);
     }
   }
