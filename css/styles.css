@@ -697,6 +697,44 @@ button {
   transform: scale(0.9);
 }
 
+.map-center-btn.is-loading {
+  color: var(--accent, #2DB84B);
+  animation: center-btn-pulse 1.1s ease-in-out infinite;
+}
+
+.map-center-btn.is-loading svg {
+  animation: center-btn-spin 1.2s linear infinite;
+}
+
+.map-center-btn.is-error {
+  color: #DC2626;
+  animation: center-btn-shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes center-btn-pulse {
+  0%, 100% { box-shadow: var(--shadow-sm); }
+  50% { box-shadow: 0 0 0 4px rgba(45, 184, 75, 0.25), var(--shadow-sm); }
+}
+
+@keyframes center-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes center-btn-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-3px); }
+  40%, 60% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-center-btn.is-loading,
+  .map-center-btn.is-loading svg,
+  .map-center-btn.is-error {
+    animation: none;
+  }
+}
+
 .map-toggle {
   position: absolute;
   top: -52px;

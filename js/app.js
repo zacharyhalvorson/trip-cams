@@ -917,7 +917,7 @@ const App = (() => {
     }
 
     highlightCard(nearestCard);
-    if (nearestCard) TripMap.panTo(userLocation.lat, userLocation.lon);
+    TripMap.panTo(userLocation.lat, userLocation.lon);
   }
 
   // ── URL Hash ─────────────────────────────────────────────────
@@ -1707,21 +1707,55 @@ const App = (() => {
     dom.mapToggle.classList.toggle('active', isSat);
   }
 
+  let _centerMapInFlight = false;
+
   function centerMap() {
-    if (userLocation) {
-      snapToCurrentLocation();
+    if (_centerMapInFlight) return;
+
+    if (!navigator.geolocation) {
+      if (userLocation) { snapToCurrentLocation(); return; }
+      if (currentWaypoints.length > 0) TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
+      setCenterMapButtonState('error');
       return;
     }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { updateUserLocation(pos); snapToCurrentLocation(); },
-        () => {
+
+    _centerMapInFlight = true;
+    setCenterMapButtonState('loading');
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        _centerMapInFlight = false;
+        updateUserLocation(pos);
+        snapToCurrentLocation();
+        setCenterMapButtonState('idle');
+      },
+      () => {
+        _centerMapInFlight = false;
+        if (userLocation) {
+          snapToCurrentLocation();
+          setCenterMapButtonState('idle');
+        } else {
           if (currentWaypoints.length > 0) TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
-        },
-        GEO_OPTS
-      );
-    } else if (currentWaypoints.length > 0) {
-      TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
+          setCenterMapButtonState('error');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  function setCenterMapButtonState(state) {
+    const btn = dom.centerMapBtn;
+    if (!btn) return;
+    btn.classList.remove('is-loading', 'is-error');
+    if (state === 'loading') {
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+    } else if (state === 'error') {
+      btn.classList.add('is-error');
+      btn.removeAttribute('aria-busy');
+      setTimeout(() => btn.classList.remove('is-error'), 1200);
+    } else {
+      btn.removeAttribute('aria-busy');
     }
   }
 
