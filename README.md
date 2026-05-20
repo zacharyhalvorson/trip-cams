@@ -2,7 +2,7 @@
 
 **Live highway cameras along your driving route.**
 
-**Live site: [https://tripcams.zacharyhalvorson.com](https://tripcams.zacharyhalvorson.com)**
+**Live site: [https://tripcams.pizza](https://tripcams.pizza)**
 
 Trip Cams is a progressive web app that shows real-time highway camera feeds along any driving route across North America. Enter any origin and destination — or pick a predefined corridor — and instantly see what road conditions look like between here and there.
 
@@ -119,7 +119,7 @@ Open `ios/TripCams/TripCams.xcodeproj` in Xcode to build and run.
 
 ## Deployment
 
-Pushes to `main` trigger an automatic GitHub Pages deployment via the workflow in `.github/workflows/deploy.yml`. The site is served at `tripcams.zacharyhalvorson.com` via a custom domain configured in the `CNAME` file.
+Pushes to `main` trigger an automatic GitHub Pages deployment via the workflow in `.github/workflows/deploy.yml`. The site is served at `tripcams.pizza` via a custom domain configured in the `CNAME` file.
 
 ## License
 
