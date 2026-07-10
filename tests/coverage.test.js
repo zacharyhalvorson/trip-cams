@@ -196,6 +196,30 @@ for (const code of cameraRegistry) {
 console.log(`  ${passed} passed`);
 
 // ═════════════════════════════════════════════════════════════
+//  TEST 1b: Every registry host is allowed by the cors-proxy Worker
+//  (a host missing from the Worker allowlist silently breaks that
+//  region for any user whose direct fetch is CORS-blocked)
+// ═════════════════════════════════════════════════════════════
+
+section('CORS proxy host allowlist');
+
+const workerSource = fs.readFileSync(path.join(ROOT, 'cors-proxy/src/index.js'), 'utf-8');
+const registryHosts = new Set(
+  [...apiSource.matchAll(/https:\/\/([^/'"?]+)/g)]
+    .map(m => m[1])
+    // Only camera/incident API hosts need proxying — skip the proxies
+    // themselves and placeholder text
+    .filter(h => !h.includes('workers.dev') && !h.includes('corsproxy') &&
+                 !h.includes('corsfix') && !h.includes('allorigins') &&
+                 !h.includes('<') && h !== 'photon.komoot.io')
+);
+for (const host of registryHosts) {
+  assert(workerSource.includes(`'${host}'`),
+    `${host} is used in js/api.js but missing from cors-proxy ALLOWED_HOSTS`);
+}
+console.log(`  ${registryHosts.size} registry hosts checked against Worker allowlist`);
+
+// ═════════════════════════════════════════════════════════════
 //  TEST 2: Coverage gaps — bounds without camera APIs
 // ═════════════════════════════════════════════════════════════
 

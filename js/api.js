@@ -22,63 +22,63 @@ const API = (() => {
 
   const CAMERA_REGISTRY = {
     // ── Canada: IBI 511 Platform (same format as Alberta) ──
-    AB: { url: 'https://511.alberta.ca/api/v2/get/cameras', norm: 'normalizeAlberta', country: 'CA' },
-    SK: { url: 'https://hotline.gov.sk.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
-    MB: { url: 'https://www.manitoba511.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
-    ON: { url: 'https://511on.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
-    NB: { url: 'https://511.gnb.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
-    NS: { url: 'https://511.novascotia.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
-    PE: { url: 'https://511.gov.pe.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
-    NL: { url: 'https://511nl.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
-    YT: { url: 'https://511yukon.ca/api/v2/get/cameras', norm: 'normalizeIBI', country: 'CA' },
+    AB: { url: 'https://511.alberta.ca/api/v2/get/cameras?format=json', norm: 'normalizeAlberta', country: 'CA' },
+    SK: { url: 'https://hotline.gov.sk.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
+    MB: { url: 'https://www.manitoba511.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
+    ON: { url: 'https://511on.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
+    NB: { url: 'https://511.gnb.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
+    NS: { url: 'https://511.novascotia.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
+    PE: { url: 'https://511.gov.pe.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
+    NL: { url: 'https://511nl.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
+    YT: { url: 'https://511yukon.ca/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'CA' },
 
     // ── Canada: Other ──
     BC: { url: 'https://www.drivebc.ca/api/webcams/', norm: 'normalizeBC', country: 'CA' },
     QC: { url: 'https://ws.mapserver.transports.gouv.qc.ca/swtq?service=wfs&version=2.0.0&request=getfeature&typename=ms:infos_cameras&outfile=Camera&srsname=EPSG:4326&outputformat=geojson', norm: 'normalizeQC', country: 'CA' },
 
     // ── US: IBI 511 Platform ──
-    NY: { url: 'https://511ny.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    NJ: { url: 'https://511nj.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    PA: { url: 'https://511pa.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    CT: { url: 'https://ctroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    GA: { url: 'https://511ga.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    FL: { url: 'https://fl511.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    SC: { url: 'https://511sc.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    WI: { url: 'https://511wi.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    LA: { url: 'https://511la.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    MN: { url: 'https://511mn.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    IA: { url: 'https://511ia.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    NE: { url: 'https://511.nebraska.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    AZ: { url: 'https://az511.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    CO: { url: 'https://www.cotrip.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    NM: { url: 'https://nmroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    MT: { url: 'https://www.511mt.net/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    ID: { url: 'https://511.idaho.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    AK: { url: 'https://511.alaska.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    UT: { url: 'https://udottraffic.utah.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    NV: { url: 'https://nvroads.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    MA: { url: 'https://mass511.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    IN: { url: 'https://511in.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    WV: { url: 'https://wv511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    NY: { url: 'https://511ny.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    NJ: { url: 'https://511nj.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    PA: { url: 'https://511pa.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    CT: { url: 'https://ctroads.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    GA: { url: 'https://511ga.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    FL: { url: 'https://fl511.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    SC: { url: 'https://511sc.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    WI: { url: 'https://511wi.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    LA: { url: 'https://511la.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    MN: { url: 'https://511mn.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    IA: { url: 'https://511ia.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    NE: { url: 'https://511.nebraska.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    AZ: { url: 'https://az511.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    CO: { url: 'https://www.cotrip.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    NM: { url: 'https://nmroads.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    MT: { url: 'https://www.511mt.net/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    ID: { url: 'https://511.idaho.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    AK: { url: 'https://511.alaska.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    UT: { url: 'https://udottraffic.utah.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    NV: { url: 'https://nvroads.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    MA: { url: 'https://mass511.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    IN: { url: 'https://511in.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    WV: { url: 'https://wv511.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
 
     // ── US: IBI 511 — regional / less certain ──
     // These use the standard IBI pattern; the app degrades gracefully if they don't respond.
-    VT: { url: 'https://www.newengland511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    NH: { url: 'https://www.newengland511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    ME: { url: 'https://www.newengland511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    SD: { url: 'https://www.sd511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    KS: { url: 'https://kandrive.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    OK: { url: 'https://oktraffic.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    VA: { url: 'https://www.511virginia.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    NC: { url: 'https://drivenc.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    TN: { url: 'https://smartway.tn.gov/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    MO: { url: 'https://traveler.modot.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    MI: { url: 'https://mi511.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    AL: { url: 'https://algotraffic.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    MS: { url: 'https://mdottraffic.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    AR: { url: 'https://idrivearkansas.com/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
-    TX: { url: 'https://drivetexas.org/api/v2/get/cameras', norm: 'normalizeIBI', country: 'US' },
+    VT: { url: 'https://www.newengland511.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    NH: { url: 'https://www.newengland511.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    ME: { url: 'https://www.newengland511.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    SD: { url: 'https://www.sd511.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    KS: { url: 'https://kandrive.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    OK: { url: 'https://oktraffic.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    VA: { url: 'https://www.511virginia.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    NC: { url: 'https://drivenc.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    TN: { url: 'https://smartway.tn.gov/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    MO: { url: 'https://traveler.modot.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    MI: { url: 'https://mi511.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    AL: { url: 'https://algotraffic.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    MS: { url: 'https://mdottraffic.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    AR: { url: 'https://idrivearkansas.com/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
+    TX: { url: 'https://drivetexas.org/api/v2/get/cameras?format=json', norm: 'normalizeIBI', country: 'US' },
 
     // ── US: Custom formats ──
     WA: {
@@ -99,7 +99,14 @@ const API = (() => {
     // ── US: ArcGIS Feature Services ──
     WY: { url: 'https://map.wyoroad.info/ags/rest/services/WTIMAP/WebCameras_v2/MapServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json', norm: 'normalizeArcGIS', country: 'US' },
     KY: { url: 'https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_WebCams_WGS84WM/MapServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json', norm: 'normalizeArcGIS', country: 'US' },
-    DE: { url: 'https://enterprise.firstmaptest.delaware.gov/arcgis/rest/services/Transportation/DE_TMC_Traffic_Feeds/FeatureServer/1/query?where=1%3D1&outFields=*&f=json', norm: 'normalizeArcGIS', country: 'US' },
+    DE: {
+      urls: [
+        // Production FirstMap server first; the -test server (original entry) as backup
+        'https://enterprise.firstmap.delaware.gov/arcgis/rest/services/Transportation/DE_TMC_Traffic_Feeds/FeatureServer/1/query?where=1%3D1&outFields=*&f=json',
+        'https://enterprise.firstmaptest.delaware.gov/arcgis/rest/services/Transportation/DE_TMC_Traffic_Feeds/FeatureServer/1/query?where=1%3D1&outFields=*&f=json',
+      ],
+      norm: 'normalizeArcGIS', country: 'US'
+    },
 
     // ── US: California per-district ──
     CA: { url: null, norm: 'normalizeCA', country: 'US', multiDistrict: true },
@@ -110,57 +117,57 @@ const API = (() => {
   // Other sources use their own formats.
   const INCIDENT_REGISTRY = {
     // Canada — IBI 511
-    AB: { url: 'https://511.alberta.ca/api/v2/get/event' },
-    SK: { url: 'https://hotline.gov.sk.ca/api/v2/get/event' },
-    MB: { url: 'https://www.manitoba511.ca/api/v2/get/event' },
-    ON: { url: 'https://511on.ca/api/v2/get/event' },
-    NB: { url: 'https://511.gnb.ca/api/v2/get/event' },
-    NS: { url: 'https://511.novascotia.ca/api/v2/get/event' },
-    PE: { url: 'https://511.gov.pe.ca/api/v2/get/event' },
-    NL: { url: 'https://511nl.ca/api/v2/get/event' },
-    YT: { url: 'https://511yukon.ca/api/v2/get/event' },
+    AB: { url: 'https://511.alberta.ca/api/v2/get/event?format=json' },
+    SK: { url: 'https://hotline.gov.sk.ca/api/v2/get/event?format=json' },
+    MB: { url: 'https://www.manitoba511.ca/api/v2/get/event?format=json' },
+    ON: { url: 'https://511on.ca/api/v2/get/event?format=json' },
+    NB: { url: 'https://511.gnb.ca/api/v2/get/event?format=json' },
+    NS: { url: 'https://511.novascotia.ca/api/v2/get/event?format=json' },
+    PE: { url: 'https://511.gov.pe.ca/api/v2/get/event?format=json' },
+    NL: { url: 'https://511nl.ca/api/v2/get/event?format=json' },
+    YT: { url: 'https://511yukon.ca/api/v2/get/event?format=json' },
     // Canada — DriveBC
     BC: { url: 'https://www.drivebc.ca/api/events/' },
     // US — IBI 511
-    NY: { url: 'https://511ny.org/api/v2/get/event' },
-    NJ: { url: 'https://511nj.org/api/v2/get/event' },
-    PA: { url: 'https://511pa.com/api/v2/get/event' },
-    CT: { url: 'https://ctroads.com/api/v2/get/event' },
-    GA: { url: 'https://511ga.org/api/v2/get/event' },
-    FL: { url: 'https://fl511.com/api/v2/get/event' },
-    SC: { url: 'https://511sc.org/api/v2/get/event' },
-    WI: { url: 'https://511wi.gov/api/v2/get/event' },
-    LA: { url: 'https://511la.org/api/v2/get/event' },
-    MN: { url: 'https://511mn.org/api/v2/get/event' },
-    IA: { url: 'https://511ia.org/api/v2/get/event' },
-    NE: { url: 'https://511.nebraska.gov/api/v2/get/event' },
-    AZ: { url: 'https://az511.com/api/v2/get/event' },
-    CO: { url: 'https://www.cotrip.org/api/v2/get/event' },
-    NM: { url: 'https://nmroads.com/api/v2/get/event' },
-    MT: { url: 'https://www.511mt.net/api/v2/get/event' },
-    ID: { url: 'https://511.idaho.gov/api/v2/get/event' },
-    AK: { url: 'https://511.alaska.gov/api/v2/get/event' },
-    UT: { url: 'https://udottraffic.utah.gov/api/v2/get/event' },
-    NV: { url: 'https://nvroads.com/api/v2/get/event' },
-    MA: { url: 'https://mass511.com/api/v2/get/event' },
-    IN: { url: 'https://511in.org/api/v2/get/event' },
-    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/event' },
-    WV: { url: 'https://wv511.org/api/v2/get/event' },
-    VT: { url: 'https://www.newengland511.org/api/v2/get/event' },
-    NH: { url: 'https://www.newengland511.org/api/v2/get/event' },
-    ME: { url: 'https://www.newengland511.org/api/v2/get/event' },
-    SD: { url: 'https://www.sd511.org/api/v2/get/event' },
-    KS: { url: 'https://kandrive.gov/api/v2/get/event' },
-    OK: { url: 'https://oktraffic.org/api/v2/get/event' },
-    VA: { url: 'https://www.511virginia.org/api/v2/get/event' },
-    NC: { url: 'https://drivenc.gov/api/v2/get/event' },
-    TN: { url: 'https://smartway.tn.gov/api/v2/get/event' },
-    MO: { url: 'https://traveler.modot.org/api/v2/get/event' },
-    MI: { url: 'https://mi511.org/api/v2/get/event' },
-    AL: { url: 'https://algotraffic.com/api/v2/get/event' },
-    MS: { url: 'https://mdottraffic.com/api/v2/get/event' },
-    AR: { url: 'https://idrivearkansas.com/api/v2/get/event' },
-    TX: { url: 'https://drivetexas.org/api/v2/get/event' },
+    NY: { url: 'https://511ny.org/api/v2/get/event?format=json' },
+    NJ: { url: 'https://511nj.org/api/v2/get/event?format=json' },
+    PA: { url: 'https://511pa.com/api/v2/get/event?format=json' },
+    CT: { url: 'https://ctroads.com/api/v2/get/event?format=json' },
+    GA: { url: 'https://511ga.org/api/v2/get/event?format=json' },
+    FL: { url: 'https://fl511.com/api/v2/get/event?format=json' },
+    SC: { url: 'https://511sc.org/api/v2/get/event?format=json' },
+    WI: { url: 'https://511wi.gov/api/v2/get/event?format=json' },
+    LA: { url: 'https://511la.org/api/v2/get/event?format=json' },
+    MN: { url: 'https://511mn.org/api/v2/get/event?format=json' },
+    IA: { url: 'https://511ia.org/api/v2/get/event?format=json' },
+    NE: { url: 'https://511.nebraska.gov/api/v2/get/event?format=json' },
+    AZ: { url: 'https://az511.com/api/v2/get/event?format=json' },
+    CO: { url: 'https://www.cotrip.org/api/v2/get/event?format=json' },
+    NM: { url: 'https://nmroads.com/api/v2/get/event?format=json' },
+    MT: { url: 'https://www.511mt.net/api/v2/get/event?format=json' },
+    ID: { url: 'https://511.idaho.gov/api/v2/get/event?format=json' },
+    AK: { url: 'https://511.alaska.gov/api/v2/get/event?format=json' },
+    UT: { url: 'https://udottraffic.utah.gov/api/v2/get/event?format=json' },
+    NV: { url: 'https://nvroads.com/api/v2/get/event?format=json' },
+    MA: { url: 'https://mass511.com/api/v2/get/event?format=json' },
+    IN: { url: 'https://511in.org/api/v2/get/event?format=json' },
+    IL: { url: 'https://www.gettingaroundillinois.com/api/v2/get/event?format=json' },
+    WV: { url: 'https://wv511.org/api/v2/get/event?format=json' },
+    VT: { url: 'https://www.newengland511.org/api/v2/get/event?format=json' },
+    NH: { url: 'https://www.newengland511.org/api/v2/get/event?format=json' },
+    ME: { url: 'https://www.newengland511.org/api/v2/get/event?format=json' },
+    SD: { url: 'https://www.sd511.org/api/v2/get/event?format=json' },
+    KS: { url: 'https://kandrive.gov/api/v2/get/event?format=json' },
+    OK: { url: 'https://oktraffic.org/api/v2/get/event?format=json' },
+    VA: { url: 'https://www.511virginia.org/api/v2/get/event?format=json' },
+    NC: { url: 'https://drivenc.gov/api/v2/get/event?format=json' },
+    TN: { url: 'https://smartway.tn.gov/api/v2/get/event?format=json' },
+    MO: { url: 'https://traveler.modot.org/api/v2/get/event?format=json' },
+    MI: { url: 'https://mi511.org/api/v2/get/event?format=json' },
+    AL: { url: 'https://algotraffic.com/api/v2/get/event?format=json' },
+    MS: { url: 'https://mdottraffic.com/api/v2/get/event?format=json' },
+    AR: { url: 'https://idrivearkansas.com/api/v2/get/event?format=json' },
+    TX: { url: 'https://drivetexas.org/api/v2/get/event?format=json' },
     // US — Custom formats
     WA: { url: 'https://data.wsdot.wa.gov/mobile/HighwayAlerts.json' },
     OR: { url: 'https://tripcheck.com/Scripts/map/data/incidents.js' },
@@ -369,35 +376,155 @@ const API = (() => {
 
   function getTimeouts() {
     const slow = isSlowConnection();
-    return { direct: slow ? 20000 : 10000, proxy: slow ? 25000 : 15000 };
+    return { direct: slow ? 16000 : 8000, proxy: slow ? 20000 : 12000 };
   }
 
-  // Track which proxy indices have failed this session to skip them on subsequent calls
-  const _failedProxies = new Set();
+  // ── Transport strategy ─────────────────────────────────────────
+  // A "transport" is one way to reach an endpoint: DIRECT or a CORS proxy
+  // (identified by its index in CORS_PROXIES).
 
-  async function fetchDirect(url, options = {}) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), getTimeouts().direct);
-    try {
-      const resp = await fetch(url, { ...options, signal: controller.signal });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      return await parseJSON(resp);
-    } finally {
-      clearTimeout(timeout);
+  const DIRECT = -1;
+
+  // Per-proxy failure tracking with cooldown. A proxy is deprioritized only
+  // while cooling down after repeated consecutive failures and recovers
+  // automatically — a single flaky upstream must not blacklist a proxy for
+  // the whole session (which previously starved every other region of it).
+  const PROXY_FAILURE_THRESHOLD = 3;
+  const PROXY_COOLDOWN_MS = 60 * 1000;
+  const _proxyHealth = CORS_PROXIES.map(() => ({ failures: 0, downUntil: 0 }));
+
+  function _noteProxyResult(idx, ok) {
+    const h = _proxyHealth[idx];
+    if (!h) return;
+    if (ok) { h.failures = 0; h.downUntil = 0; return; }
+    h.failures++;
+    if (h.failures >= PROXY_FAILURE_THRESHOLD) {
+      h.downUntil = Date.now() + PROXY_COOLDOWN_MS;
     }
   }
 
-  async function fetchViaProxy(url, proxyFn, options = {}) {
-    const proxied = proxyFn(url);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), getTimeouts().proxy);
+  // Remember which transport worked last for each API host, so the next
+  // load starts on a known-good path instead of burning a timeout
+  // rediscovering that (say) direct fetches never work for this host.
+  const TRANSPORT_PREFS_KEY = 'tripcams_transports';
+  let _transportPrefs = null;
+
+  function _loadTransportPrefs() {
+    if (_transportPrefs) return _transportPrefs;
     try {
-      const resp = await fetch(proxied, { ...options, signal: controller.signal });
+      _transportPrefs = JSON.parse(localStorage.getItem(TRANSPORT_PREFS_KEY)) || {};
+    } catch (e) {
+      _transportPrefs = {};
+    }
+    return _transportPrefs;
+  }
+
+  function _hostOf(url) {
+    try { return new URL(url).host; } catch (e) { return url; }
+  }
+
+  function _rememberTransport(url, transport) {
+    const prefs = _loadTransportPrefs();
+    const host = _hostOf(url);
+    if (prefs[host] === transport) return;
+    prefs[host] = transport;
+    try { localStorage.setItem(TRANSPORT_PREFS_KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ }
+  }
+
+  // Transports to try for a URL, best-first: last-known-good for this host,
+  // then direct, then healthy proxies in order, then cooling-down proxies.
+  function _transportOrder(url) {
+    const now = Date.now();
+    const healthy = [DIRECT];
+    const coolingDown = [];
+    for (let i = 0; i < CORS_PROXIES.length; i++) {
+      (_proxyHealth[i].downUntil > now ? coolingDown : healthy).push(i);
+    }
+    const order = healthy.concat(coolingDown);
+    const preferred = _loadTransportPrefs()[_hostOf(url)];
+    const pos = order.indexOf(preferred);
+    if (pos > 0) {
+      order.splice(pos, 1);
+      order.unshift(preferred);
+    }
+    return order;
+  }
+
+  async function _fetchVia(url, transport, outerSignal) {
+    const timeouts = getTimeouts();
+    const target = transport === DIRECT ? url : CORS_PROXIES[transport](url);
+    const ms = transport === DIRECT ? timeouts.direct : timeouts.proxy;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    const onOuterAbort = () => controller.abort();
+    if (outerSignal) outerSignal.addEventListener('abort', onOuterAbort, { once: true });
+    try {
+      const resp = await fetch(target, { signal: controller.signal });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return await parseJSON(resp);
     } finally {
-      clearTimeout(timeout);
+      clearTimeout(timer);
+      if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
     }
+  }
+
+  // Hedged fetch: start the preferred transport, then start the next one
+  // every HEDGE_DELAY_MS (or immediately once everything in flight has
+  // failed). First success wins and aborts the rest. This bounds worst-case
+  // latency to a few seconds per extra transport instead of the sum of every
+  // transport's full timeout (previously 70s+ for a dead region).
+  const HEDGE_DELAY_MS = 2500;
+
+  function fetchWithRetry(url) {
+    const transports = _transportOrder(url);
+    return new Promise((resolve, reject) => {
+      const outer = new AbortController();
+      let settled = false;
+      let inFlight = 0;
+      let next = 0;
+      let lastError = null;
+      let hedgeTimer = null;
+
+      const launch = () => {
+        if (settled || next >= transports.length) return;
+        const transport = transports[next++];
+        inFlight++;
+        _fetchVia(url, transport, outer.signal)
+          .then(data => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(hedgeTimer);
+            _rememberTransport(url, transport);
+            if (transport !== DIRECT) _noteProxyResult(transport, true);
+            outer.abort(); // cancel hedged losers
+            resolve(data);
+          })
+          .catch(err => {
+            inFlight--;
+            if (settled) return; // hedge loser cancelled after a win
+            const e = err && err.name === 'AbortError' ? new Error('timeout') : err;
+            if (transport !== DIRECT) _noteProxyResult(transport, false);
+            lastError = e;
+            if (next < transports.length) {
+              // Failed fast — don't wait for the hedge timer
+              clearTimeout(hedgeTimer);
+              launchAndScheduleNext();
+            } else if (inFlight === 0) {
+              settled = true;
+              reject(lastError || new Error('All fetch attempts failed'));
+            }
+          });
+      };
+
+      const launchAndScheduleNext = () => {
+        launch();
+        if (!settled && next < transports.length) {
+          hedgeTimer = setTimeout(launchAndScheduleNext, HEDGE_DELAY_MS);
+        }
+      };
+
+      launchAndScheduleNext();
+    });
   }
 
   async function fetchFallback(region) {
@@ -410,30 +537,13 @@ const API = (() => {
     }
   }
 
-  // Try direct, then each proxy in order (skipping proxies that failed this session)
-  async function fetchWithRetry(url) {
-    try {
-      return await fetchDirect(url);
-    } catch (e) {
-      for (let i = 0; i < CORS_PROXIES.length; i++) {
-        if (_failedProxies.has(i)) continue;
-        try {
-          return await fetchViaProxy(url, CORS_PROXIES[i]);
-        } catch (_) {
-          _failedProxies.add(i);
-        }
-      }
-      throw e;
-    }
-  }
-
   // Background refresh — updates cache silently
-  async function refreshRegion(region, endpoint) {
+  async function refreshRegion(region, urls) {
     try {
-      const raw = await fetchWithRetry(endpoint);
+      const raw = await fetchFirstUrl(urls, region);
       // Only overwrite cache if API returned actual data
       const normalizer = getNormalizer(region);
-      if (normalizer(raw).length > 0) {
+      if (raw && normalizer(raw).length > 0) {
         setCachedData(region, raw);
       }
     } catch (e) {
@@ -454,42 +564,6 @@ const API = (() => {
     return REGION_NORMALIZERS[entry.norm] ? (d) => fn(d, region) : fn;
   }
 
-  // Generic fetch for a region: stale-while-revalidate pattern
-  async function fetchRegion(region, endpoint, normalizer) {
-    const cached = getCachedData(region);
-
-    // Fresh cache — return immediately
-    if (cached && cached.fresh) {
-      return { data: normalizer(cached.data), fromCache: true };
-    }
-
-    // Stale cache exists — return it but refresh in background
-    if (cached && !cached.fresh) {
-      refreshRegion(region, endpoint).catch(() => {});
-      return { data: normalizer(cached.data), fromCache: true, stale: true };
-    }
-
-    // No cache at all — must fetch
-    try {
-      const raw = await fetchWithRetry(endpoint);
-      const normalized = normalizer(raw);
-      if (normalized.length > 0) {
-        setCachedData(region, raw);
-        return { data: normalized, fromCache: false };
-      }
-      // API returned empty data — fall through to fallback
-      console.warn(`${region} API returned empty data, trying fallback`);
-    } catch (e) {
-      console.warn(`${region} API failed, trying fallback:`, e.message);
-    }
-    const fallback = await fetchFallback(region);
-    if (fallback) {
-      setCachedData(region, fallback);
-      return { data: normalizer(fallback), fromCache: true };
-    }
-    return { data: [], fromCache: true, error: 'All attempts failed' };
-  }
-
   // Store route geometry for California district optimization
   let _currentRouteGeometry = null;
   function setRouteGeometry(geometry) { _currentRouteGeometry = geometry; }
@@ -506,46 +580,70 @@ const API = (() => {
       return fetchCalifornia(normalizer, _currentRouteGeometry);
     }
 
-    // Support entries with multiple fallback URLs
-    if (entry.urls) {
-      return fetchRegionMultiUrl(region, entry.urls, normalizer);
-    }
-    return fetchRegion(region, entry.url, normalizer);
+    return fetchRegion(region, entry.urls || [entry.url], normalizer);
   }
 
-  // Two-phase fetch for multi-URL endpoints: try all URLs direct first (fast),
-  // then proxy only if all direct attempts fail. Avoids the full retry chain
-  // per URL which can take 40s+ each when endpoints are down.
-  // Returns raw data on success, null if all attempts fail.
-  async function tryUrlsTwoPhase(urls, region) {
-    const label = region || 'multi-url';
-    const errors = [];
-    // Phase 1: try all URLs direct (fast, no proxy overhead)
-    for (const url of urls) {
-      try {
-        const data = await fetchDirect(url);
-        if (data) return data;
-      } catch (e) {
-        errors.push(`direct ${url.split('?')[0]}: ${e.message}`);
-      }
+  // Race candidate URLs for one region, staggered so a dead primary doesn't
+  // serialize the whole chain: url[0] starts immediately, url[i] starts
+  // i*URL_STAGGER_MS later or as soon as everything in flight has failed.
+  // Each URL is itself a hedged direct/proxy fetch (fetchWithRetry).
+  // Returns raw data on first success, null if all URLs fail.
+  const URL_STAGGER_MS = 4000;
+
+  function fetchFirstUrl(urls, region) {
+    if (urls.length === 1) {
+      return fetchWithRetry(urls[0]).catch(e => {
+        console.warn(`[${region}] Fetch failed: ${e.message}`);
+        return null;
+      });
     }
-    // Phase 2+: try each proxy across all URLs
-    for (let i = 0; i < CORS_PROXIES.length; i++) {
-      const proxyFn = CORS_PROXIES[i];
-      for (const url of urls) {
-        try {
-          const data = await fetchViaProxy(url, proxyFn);
-          if (data) return data;
-        } catch (e) {
-          errors.push(`proxy${i + 1} ${url.split('?')[0]}: ${e.message}`);
+    return new Promise((resolve) => {
+      let settled = false;
+      let inFlight = 0;
+      let next = 0;
+      let staggerTimer = null;
+      const errors = [];
+
+      const launch = () => {
+        if (settled || next >= urls.length) return;
+        const url = urls[next++];
+        inFlight++;
+        fetchWithRetry(url)
+          .then(data => {
+            if (settled || !data) throw new Error('empty response');
+            settled = true;
+            clearTimeout(staggerTimer);
+            resolve(data);
+          })
+          .catch(e => {
+            inFlight--;
+            if (settled) return;
+            errors.push(`${url.split('?')[0]}: ${e.message}`);
+            if (next < urls.length) {
+              clearTimeout(staggerTimer);
+              launchAndScheduleNext();
+            } else if (inFlight === 0) {
+              settled = true;
+              console.warn(`[${region}] All fetch attempts failed:`, errors.join('; '));
+              resolve(null);
+            }
+          });
+      };
+
+      const launchAndScheduleNext = () => {
+        launch();
+        if (!settled && next < urls.length) {
+          staggerTimer = setTimeout(launchAndScheduleNext, URL_STAGGER_MS);
         }
-      }
-    }
-    console.warn(`[${label}] All fetch attempts failed:`, errors.join('; '));
-    return null;
+      };
+
+      launchAndScheduleNext();
+    });
   }
 
-  async function fetchRegionMultiUrl(region, urls, normalizer) {
+  // Generic fetch for a region: stale-while-revalidate with corrupt-cache
+  // recovery and bundled-fallback as last resort.
+  async function fetchRegion(region, urls, normalizer) {
     const cached = getCachedData(region);
     if (cached && cached.fresh) {
       const data = normalizer(cached.data);
@@ -562,14 +660,14 @@ const API = (() => {
       const data = normalizer(cached.data);
       if (data.length > 0) {
         // Stale cache has usable data — return it, refresh in background
-        tryUrlsTwoPhase(urls, region).then(raw => { if (raw) setCachedData(region, raw); });
+        refreshRegion(region, urls).catch(() => {});
         return { data, fromCache: true, stale: true };
       }
       // Stale cache normalized to 0 — don't return empty, fall through to fetch
       console.warn(`[${region}] Stale cache normalized to 0 cameras, refetching`);
     }
     // No cache (or corrupt cache) — must fetch
-    const raw = await tryUrlsTwoPhase(urls, region);
+    const raw = await fetchFirstUrl(urls, region);
     if (raw) {
       const data = normalizer(raw);
       if (data.length > 0) {
@@ -584,7 +682,7 @@ const API = (() => {
       const data = normalizer(fallback);
       if (data.length > 0) {
         setCachedData(region, fallback);
-        return { data, fromCache: true };
+        return { data, fromCache: true, fallback: true };
       }
       console.warn(`[${region}] Fallback file also normalized to 0 cameras`);
     }
@@ -625,19 +723,67 @@ const API = (() => {
     }
 
     // No cache — fetch districts
-    try {
-      const results = await Promise.allSettled(districts.map(d => fetchWithRetry(d.url)));
-      const merged = results.flatMap(r => r.status === 'fulfilled' && r.value ? (Array.isArray(r.value) ? r.value : (r.value.data || [])) : []);
-      if (merged.length > 0) setCachedData('CA', merged);
+    const results = await Promise.allSettled(districts.map(d => fetchWithRetry(d.url)));
+    const merged = results.flatMap(r => r.status === 'fulfilled' && r.value ? (Array.isArray(r.value) ? r.value : (r.value.data || [])) : []);
+    if (merged.length > 0) {
+      setCachedData('CA', merged);
       return { data: normalizer(merged), fromCache: false };
-    } catch (e) {
-      const fallback = await fetchFallback('CA');
-      if (fallback) {
-        setCachedData('CA', fallback);
-        return { data: normalizer(fallback), fromCache: true };
-      }
-      return { data: [], fromCache: true, error: e.message };
     }
+    // Every district failed — bundled fallback, then hard failure
+    const fallback = await fetchFallback('CA');
+    if (fallback) {
+      const data = normalizer(fallback);
+      if (data.length > 0) {
+        setCachedData('CA', fallback);
+        return { data, fromCache: true, fallback: true };
+      }
+    }
+    return { data: [], fromCache: true, error: 'All districts failed' };
+  }
+
+  // ── Region health tracking ─────────────────────────────────────
+  // Records the outcome of the most recent load attempt per region so the
+  // app (and the user) can see WHERE camera loading is broken instead of
+  // failures dissolving into a silently shorter list.
+  // status: 'ok' | 'stale' | 'fallback' | 'empty' | 'failed'
+
+  const _regionHealth = {};
+
+  function _reportHealth(region, result, ms) {
+    const count = result.data ? result.data.length : 0;
+    let status;
+    if (count === 0) {
+      status = result.error ? 'failed' : 'empty';
+    } else if (result.fallback) {
+      status = 'fallback';
+    } else if (result.stale) {
+      status = 'stale';
+    } else {
+      status = 'ok';
+    }
+    _regionHealth[region] = {
+      status,
+      count,
+      ms,
+      source: result.fallback ? 'bundled' : (result.fromCache ? 'cache' : 'network'),
+      error: result.error || null,
+      ts: Date.now(),
+    };
+  }
+
+  // Snapshot of per-region load health (copy — safe to hold across loads)
+  function getRegionHealth() {
+    return { ..._regionHealth };
+  }
+
+  // Human-readable region name from region-bounds.json (falls back to code)
+  function getRegionName(code) {
+    if (_regionBounds) {
+      for (const regions of Object.values(_regionBounds)) {
+        if (regions[code] && regions[code].name) return regions[code].name;
+      }
+    }
+    return code;
   }
 
   // ── Progressive fetching ───────────────────────────────────────
@@ -672,10 +818,22 @@ const API = (() => {
       const fetchers = batch.map(key => {
         const entry = CAMERA_REGISTRY[key];
         const url = entry.url || (entry.urls && entry.urls[0]) || key;
-        const siblings = urlToRegions.get(url);
+        const siblings = urlToRegions.get(url) || [key];
+        const t0 = Date.now();
         return fetchRegisteredRegion(key)
-          .then(r => { onRegion(key, r); return r; })
-          .catch(e => { onRegion(key, { data: [], fromCache: true, error: e.message }); });
+          .then(r => {
+            const ms = Date.now() - t0;
+            // Regions sharing this endpoint get the same health outcome
+            for (const sib of siblings) _reportHealth(sib, r, ms);
+            onRegion(key, r);
+            return r;
+          })
+          .catch(e => {
+            const r = { data: [], fromCache: true, error: e.message };
+            const ms = Date.now() - t0;
+            for (const sib of siblings) _reportHealth(sib, r, ms);
+            onRegion(key, r);
+          });
       });
       await Promise.allSettled(fetchers);
     }
@@ -1003,6 +1161,8 @@ const API = (() => {
     fetchProgressive,
     clearCache,
     getCachedImmediate,
+    getRegionHealth,
+    getRegionName,
     hasRegion,
     getSupportedRegions,
     getRegionsForRoute,

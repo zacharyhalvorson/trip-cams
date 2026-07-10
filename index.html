@@ -77,6 +77,21 @@
     <button class="update-banner-btn" id="updateBtn">Refresh</button>
   </div>
 
+  <!-- Region Status Banner (shown when camera APIs fail for regions on the route) -->
+  <div class="region-banner" id="regionBanner" role="status">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span class="region-banner-text" id="regionBannerText"></span>
+    <button class="region-banner-btn" id="regionBannerRetry">Retry</button>
+    <button class="region-banner-close" id="regionBannerClose" aria-label="Dismiss">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
   <!-- Location Dropdown -->
   <div class="dropdown-overlay" id="dropdownOverlay"></div>
   <div class="dropdown" id="dropdown">

@@ -1554,6 +1554,87 @@ button {
 }
 
 /* =============================================================
+   Region Status Banner
+   ============================================================= */
+
+.region-banner {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  z-index: 998; /* below the update banner so it wins when both show */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #b45309;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  transform: translateY(calc(-100% - var(--header-height)));
+  transition: transform var(--duration) var(--spring);
+}
+
+.region-banner.visible {
+  transform: translateY(0);
+}
+
+.region-banner > svg {
+  flex-shrink: 0;
+}
+
+.region-banner-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.region-banner-btn {
+  padding: 4px 14px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.region-banner-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.region-banner-btn:active {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.region-banner.retrying .region-banner-btn {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.region-banner-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.region-banner-close:hover {
+  color: #fff;
+}
+
+/* =============================================================
    Empty State
    ============================================================= */
 
