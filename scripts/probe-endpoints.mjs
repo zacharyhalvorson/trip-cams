@@ -143,6 +143,7 @@ async function probeRegion(region) {
 
   const urls = entry.urls || [entry.url];
   const errors = [];
+  let sawEmpty = false;
   for (const url of urls) {
     const { data, error } = await fetchUrl(url);
     if (error) { errors.push(error); continue; }
@@ -151,16 +152,33 @@ async function probeRegion(region) {
     if (cameras.length > 0) {
       const withImages = cameras.filter(c => c.imageUrl).length;
       const imageCheck = await checkImage(cameras);
-      return { region, status: 'ok', cameras: cameras.length, withImages, ms, imageCheck };
+      // No image URLs means the normalizer's field mapping is stale —
+      // surface the raw field names so it can be fixed without guessing
+      const note = withImages === 0 ? `raw fields: ${sampleKeys(data)}` : undefined;
+      return { region, status: 'ok', cameras: cameras.length, withImages, ms, imageCheck, note };
     }
     // Endpoint responded but produced no cameras — registry URL or
-    // normalizer no longer matches what the API returns
-    const keys = Array.isArray(data)
-      ? `array[${data.length}]${data.length ? ` item keys: ${Object.keys(data[0]).slice(0, 6).join(',')}` : ''}`
-      : `object keys: ${Object.keys(data || {}).slice(0, 6).join(',')}`;
-    return { region, status: 'empty', cameras: 0, ms: Date.now() - t0, note: `response shape: ${keys}` };
+    // normalizer no longer matches what the API returns. Keep trying
+    // any remaining candidate URLs.
+    sawEmpty = true;
+    errors.push(`empty response (shape: ${sampleKeys(data)})`);
   }
-  return { region, status: 'failed', cameras: 0, ms: Date.now() - t0, note: errors.join('; ') };
+  return { region, status: sawEmpty ? 'empty' : 'failed', cameras: 0, ms: Date.now() - t0, note: errors.join('; ') };
+}
+
+// Field names of a representative item in an API response, for diagnostics
+function sampleKeys(data) {
+  if (Array.isArray(data)) {
+    return data.length ? `array[${data.length}] item: ${Object.keys(data[0]).slice(0, 10).join(',')}` : 'array[0]';
+  }
+  if (data && typeof data === 'object') {
+    const container = Array.isArray(data.features) ? data.features[0]?.attributes || data.features[0]
+      : Array.isArray(data.data) ? data.data[0]
+      : null;
+    const top = Object.keys(data).slice(0, 6).join(',');
+    return container ? `{${top}} item: ${Object.keys(container).slice(0, 10).join(',')}` : `object keys: ${top}`;
+  }
+  return typeof data;
 }
 
 async function main() {

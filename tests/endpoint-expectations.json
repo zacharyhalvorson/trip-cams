@@ -1,13 +1,25 @@
 {
-  "_comment": "Regions in expectOk are known-working camera APIs — the scheduled endpoint-health workflow fails (and opens an issue) if any of them stop serving cameras. Regions NOT listed are speculative registry entries probed report-only; promote them here once scripts/probe-endpoints.mjs shows them working.",
+  "_comment": "Regions in expectOk are known-working camera APIs — the scheduled endpoint-health workflow fails (and opens an issue) if any of them stop serving cameras. Regions NOT listed are broken or unverified registry entries probed report-only; promote them here once scripts/probe-endpoints.mjs shows them working. Based on the 2026-07-10 probe: 9 regions worked bare, and the IBI-platform regions that returned HTTP 400 are expected to work with the format=json parameter.",
   "expectOk": [
-    "AB", "SK", "MB", "ON", "NB", "NS", "PE", "NL", "YT", "BC", "QC",
-    "NY", "NJ", "PA", "CT", "GA", "FL", "SC", "WI", "LA", "MN", "IA",
-    "NE", "AZ", "CO", "MT", "ID", "UT", "NV", "MA", "IN", "WV",
-    "WA", "OR", "MD", "OH", "ND", "WY", "KY", "CA"
+    "AB", "ON", "BC", "WA", "OR", "MD", "ND", "KY", "CA",
+    "SK", "MB", "NB", "NS", "PE", "NL", "YT",
+    "NY", "PA", "CT", "GA", "FL", "WI", "LA", "AZ", "ID", "AK",
+    "UT", "NV", "VT", "NH", "ME", "NC"
   ],
   "speculative": [
-    "NM", "AK", "IL", "VT", "NH", "ME", "SD", "KS", "OK", "VA", "NC",
-    "TN", "MO", "MI", "AL", "MS", "AR", "TX", "DE"
-  ]
+    "QC", "NJ", "SC", "MN", "IA", "NE", "CO", "MA", "IN", "WV",
+    "OH", "WY", "MT", "NM", "IL", "SD", "KS", "OK", "VA", "TN",
+    "MO", "MI", "AL", "MS", "AR", "TX", "DE"
+  ],
+  "notes": {
+    "OH": "publicapi.ohgo.com now returns 401 — requires an API key",
+    "NJ": "511nj.org returns 403 to non-browser requests",
+    "MN,IA,NE,CO,MA,IN,KS": "endpoints serve an SPA index page — these states migrated off the IBI api/v2 platform",
+    "WY,MT,MO,MS,SD,OK,IL,NM": "404 — endpoint URLs are dead and need rediscovery",
+    "MI": "mi511.org does not resolve (ENOTFOUND)",
+    "QC": "Quebec WFS returns HTTP 400 — query parameters need rechecking",
+    "SC,VA,TN,AL,AR": "serve HTML pages, not the IBI JSON API",
+    "TX,WV": "HTTP 500 from the api/v2 endpoint",
+    "DE": "FirstMap ArcGIS layer returns an error object — layer id or service path changed"
+  }
 }
