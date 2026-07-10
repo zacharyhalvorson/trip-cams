@@ -11,15 +11,18 @@
     "MO", "MI", "AL", "MS", "AR", "TX", "OH", "WY"
   ],
   "notes": {
-    "SK,MB,NB,NS,PE,NL,YT,NY,PA,CT,GA,FL,WI,LA,AZ,ID,AK,UT,NV,VT,NH,ME,NC": "IBI 511 API returns HTTP 400 even with format=json — these deployments almost certainly require a registered API key (AB and ON don't enforce one). Fix: register for per-state 511 developer keys, or have the cors-proxy Worker inject keys server-side.",
-    "OH": "publicapi.ohgo.com returns 401 — requires an API key",
-    "NJ": "511nj.org returns 403 to non-browser requests",
+    "SK,MB,NB,NS,PE,NL,YT,NY,PA,CT,GA,FL,WI,LA,AZ,ID,AK,UT,NV,VT,NH,ME,NC": "CONFIRMED by probe: IBI 511 API returns HTTP 400 {\"Message\":\"Invalid Key\"} — these deployments require a registered API key (AB and ON don't enforce one). Fix: register for per-state 511 developer keys and have the cors-proxy Worker inject them server-side so they aren't shipped in client JS.",
+    "OH": "CONFIRMED: publicapi.ohgo.com returns 401 'API key required.' — docs at https://publicapi.ohgo.com/docs/resources",
+    "NJ": "511nj.org returns 403 Access Denied to non-browser requests",
     "MN,IA,NE,CO,MA,IN,KS": "endpoints serve an SPA index page — these states migrated off the IBI api/v2 platform",
-    "WY,MT,MO,MS,SD,OK,IL,NM": "404 — endpoint URLs are dead and need rediscovery",
+    "WY,MT,MO,MS,SD,NM": "404 — endpoint URLs are dead and need rediscovery",
+    "OK": "oktraffic.org IS a live API server (LoopBack-style error: 'no method to handle GET /v2/get/cameras') — correct route needs rediscovery",
+    "IL": "gettingaroundillinois.com: resource removed/renamed (404 with IIS message)",
     "MI": "mi511.org does not resolve (ENOTFOUND)",
-    "QC": "Quebec WFS returns HTTP 400 — query parameters need rechecking",
+    "QC": "Quebec WFS returns HTTP 400 with an OWS ExceptionReport — query parameters need rechecking",
     "SC,VA,TN,AL,AR": "serve HTML pages, not the IBI JSON API",
     "TX,WV": "HTTP 500 from the api/v2 endpoint",
-    "OR,MD,ND,KY,DE": "working but normalizers map no image URLs — check the probe's 'raw fields' note to fix the field mapping"
+    "DE": "working, but cameras expose only RTMP/RTSP/M3U8 video streams — no static images exist; showing them needs HLS video support in the camera card/modal",
+    "OR,MD,ND,KY": "working but normalizers map no image URLs — check the probe's 'raw fields' note (full key dump) to fix the field mapping or confirm the source is video-only"
   }
 }

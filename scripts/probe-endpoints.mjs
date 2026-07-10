@@ -174,17 +174,19 @@ async function probeRegion(region) {
   return { region, status: sawEmpty ? 'empty' : 'failed', cameras: 0, ms: Date.now() - t0, note: errors.join('; ') };
 }
 
-// Field names of a representative item in an API response, for diagnostics
+// Field names of a representative item in an API response, for diagnostics.
+// Dumps ALL item keys — this is what fixing a stale normalizer needs.
 function sampleKeys(data) {
   if (Array.isArray(data)) {
-    return data.length ? `array[${data.length}] item: ${Object.keys(data[0]).slice(0, 10).join(',')}` : 'array[0]';
+    return data.length ? `array[${data.length}] item: ${Object.keys(data[0]).join(',')}` : 'array[0]';
   }
   if (data && typeof data === 'object') {
-    const container = Array.isArray(data.features) ? data.features[0]?.attributes || data.features[0]
-      : Array.isArray(data.data) ? data.data[0]
-      : null;
+    const feature = Array.isArray(data.features) ? data.features[0] : null;
+    const container = (feature && (feature.attributes || feature.properties)) // ArcGIS / GeoJSON
+      || feature
+      || (Array.isArray(data.data) ? data.data[0] : null);
     const top = Object.keys(data).slice(0, 6).join(',');
-    return container ? `{${top}} item: ${Object.keys(container).slice(0, 10).join(',')}` : `object keys: ${top}`;
+    return container ? `{${top}} item: ${Object.keys(container).join(',')}` : `object keys: ${top}`;
   }
   return typeof data;
 }
