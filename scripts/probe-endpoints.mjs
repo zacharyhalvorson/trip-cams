@@ -77,7 +77,15 @@ async function fetchUrl(url) {
       headers: { 'User-Agent': UA, 'Accept': 'application/json,text/javascript,*/*' },
       redirect: 'follow',
     });
-    if (!resp.ok) return { error: `HTTP ${resp.status}` };
+    if (!resp.ok) {
+      // Include a snippet of the error body — DOT APIs usually say exactly
+      // what's wrong ("API key is required", "format must be...", etc.)
+      let snippet = '';
+      try {
+        snippet = (await resp.text()).slice(0, 140).replace(/\s+/g, ' ').trim();
+      } catch (e) { /* body unavailable */ }
+      return { error: `HTTP ${resp.status}${snippet ? ` — ${snippet}` : ''}` };
+    }
     const text = await resp.text();
     try {
       return { data: parseBody(text) };
@@ -193,7 +201,7 @@ async function main() {
       results.push(r);
       const flag = r.status === 'ok' ? ' OK ' : r.status === 'degraded' ? 'WARN' : 'FAIL';
       const detail = r.status === 'ok'
-        ? `${String(r.cameras).padStart(5)} cameras  ${String(r.ms).padStart(6)}ms  image: ${r.imageCheck}`
+        ? `${String(r.cameras).padStart(5)} cameras  ${String(r.ms).padStart(6)}ms  image: ${r.imageCheck}${r.note ? `  (${r.note})` : ''}`
         : `${r.status.toUpperCase()}: ${r.note || ''}`;
       console.log(`  [${flag}] ${r.region.padEnd(3)} ${detail}`);
     }
