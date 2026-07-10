@@ -55,6 +55,35 @@ const FETCH_TIMEOUT_MS = 20000;
 const CONCURRENCY = 8;
 const UA = 'Mozilla/5.0 (compatible; TripCamsHealthCheck/1.0; +https://tripcams.pizza)';
 
+// API keys for key-gated endpoints (IBI 511 `?key=`, OHGO `api-key` header).
+// Same JSON shape as the cors-proxy Worker's API_KEYS secret:
+//   { "511ny.org": "key", "publicapi.ohgo.com": { "header": "api-key", "key": "..." } }
+// In CI this comes from the TRIPCAMS_API_KEYS repository secret.
+let API_KEYS = {};
+try {
+  API_KEYS = process.env.TRIPCAMS_API_KEYS ? JSON.parse(process.env.TRIPCAMS_API_KEYS) : {};
+} catch (e) {
+  console.warn('TRIPCAMS_API_KEYS is not valid JSON — probing without keys');
+}
+if (Object.keys(API_KEYS).length > 0) {
+  console.log(`API keys configured for: ${Object.keys(API_KEYS).join(', ')}\n`);
+}
+
+// Apply a configured key for this URL's host (mirrors the Worker's logic)
+function withApiKey(url, headers) {
+  const config = API_KEYS[new URL(url).hostname];
+  if (!config) return { url, headers };
+  if (typeof config === 'string') {
+    const u = new URL(url);
+    u.searchParams.set('key', config);
+    return { url: u.toString(), headers };
+  }
+  if (config.header && config.key) {
+    return { url, headers: { ...headers, [config.header]: config.key } };
+  }
+  return { url, headers };
+}
+
 // Mirrors api.js parseJSON: plain JSON, JSONP, or JS variable assignment
 function parseBody(text) {
   try {
@@ -71,10 +100,11 @@ function parseBody(text) {
 async function fetchUrl(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const keyed = withApiKey(url, { 'User-Agent': UA, 'Accept': 'application/json,text/javascript,*/*' });
   try {
-    const resp = await fetch(url, {
+    const resp = await fetch(keyed.url, {
       signal: controller.signal,
-      headers: { 'User-Agent': UA, 'Accept': 'application/json,text/javascript,*/*' },
+      headers: keyed.headers,
       redirect: 'follow',
     });
     if (!resp.ok) {

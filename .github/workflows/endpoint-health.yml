@@ -26,6 +26,10 @@ jobs:
       - name: Probe all camera endpoints
         id: probe
         run: node scripts/probe-endpoints.mjs --json endpoint-report.json
+        env:
+          # JSON map of hostname → API key (see docs/api-keys.md).
+          # Empty/unset is fine — key-gated regions just probe as broken.
+          TRIPCAMS_API_KEYS: ${{ secrets.TRIPCAMS_API_KEYS }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
