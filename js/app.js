@@ -189,6 +189,10 @@ const App = (() => {
     dom.pullToRefresh = $('#pullToRefresh');
     dom.updateBanner = $('#updateBanner');
     dom.updateBtn = $('#updateBtn');
+    dom.regionBanner = $('#regionBanner');
+    dom.regionBannerText = $('#regionBannerText');
+    dom.regionBannerRetry = $('#regionBannerRetry');
+    dom.regionBannerClose = $('#regionBannerClose');
   }
 
   async function init() {
@@ -400,6 +404,13 @@ const App = (() => {
     // Route inputs
     dom.fromInput.addEventListener('click', () => openDropdown('from'));
     dom.toInput.addEventListener('click', () => openDropdown('to'));
+
+    // Region status banner: retry failed regions / dismiss
+    dom.regionBannerRetry.addEventListener('click', retryFailedRegions);
+    dom.regionBannerClose.addEventListener('click', () => {
+      _regionBannerDismissedGen = _routeGeneration;
+      dom.regionBanner.classList.remove('visible');
+    });
     // Swap: short tap swaps, long press opens notifications panel
     let _swapLongPressTimer = null;
     let _swapDidLongPress = false;
@@ -762,6 +773,8 @@ const App = (() => {
     currentRouteGeometry = null; // Reset until OSRM geometry loads
     _lastFilteredIds = ''; // Reset so filters re-render for new route
     _hasZoomedForScroll = false; // Reset so map auto-zooms to visible cameras
+    _lastNeededRegions = null;
+    dom.regionBanner.classList.remove('visible'); // Stale for the new route
     TripMap.drawRoute(currentWaypoints);
     TripMap.fitToRoute(currentWaypoints, { paddingBottom: sheetPeekPadding() });
 
@@ -822,6 +835,7 @@ const App = (() => {
 
       const neededRegions = await API.getRegionsForRoute(regionPath);
       if (generation !== _routeGeneration) return; // Route changed while detecting regions
+      _lastNeededRegions = neededRegions;
       if (neededRegions.size === 0) {
         _lastFilteredIds = '';
         applyFilters();
@@ -862,6 +876,7 @@ const App = (() => {
       applyFilters();
 
       dom.skeletonList.classList.add('hidden');
+      updateRegionBanner(generation);
 
       // Auto-open camera from URL hash
       requestAnimationFrame(() => _openCameraFromHash());
@@ -870,6 +885,72 @@ const App = (() => {
       _lastFilteredIds = '';
       applyFilters();
       dom.skeletonList.classList.add('hidden');
+      updateRegionBanner(generation);
+    }
+  }
+
+  // ── Region status banner ────────────────────────────────────
+  // Surfaces regions on the current route whose camera APIs failed, so a
+  // regional outage is visible and retryable instead of cameras silently
+  // missing from the list.
+
+  let _lastNeededRegions = null;      // Set of region codes the current route needs
+  let _regionBannerDismissedGen = -1; // route generation the user dismissed the banner in
+  let _autoRetriedGen = -1;           // route generation an automatic retry already ran in
+
+  function updateRegionBanner(generation) {
+    if (generation !== _routeGeneration) return;
+    const needed = _lastNeededRegions;
+    if (!needed || needed.size === 0) {
+      dom.regionBanner.classList.remove('visible');
+      return;
+    }
+
+    const health = API.getRegionHealth();
+    const problems = [...needed].filter(r => {
+      const h = health[r];
+      return h && (h.status === 'failed' || h.status === 'empty');
+    });
+
+    if (problems.length === 0) {
+      dom.regionBanner.classList.remove('visible');
+      return;
+    }
+
+    // One automatic background retry per route — transient failures
+    // (flaky proxy, brief timeout) recover without user action
+    if (_autoRetriedGen !== generation) {
+      _autoRetriedGen = generation;
+      setTimeout(() => {
+        if (generation === _routeGeneration) retryFailedRegions();
+      }, 20000);
+    }
+
+    if (_regionBannerDismissedGen === generation) return;
+
+    const names = problems.map(r => API.getRegionName(r));
+    const list = names.length <= 2
+      ? names.join(' and ')
+      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+    dom.regionBannerText.textContent = `Cameras unavailable in ${list}`;
+    dom.regionBanner.classList.add('visible');
+  }
+
+  // Re-run the current route's camera load. Failed regions are never cached,
+  // so they re-fetch; healthy regions return instantly from cache.
+  async function retryFailedRegions() {
+    const generation = _routeGeneration;
+    dom.regionBanner.classList.add('retrying');
+    dom.regionBannerRetry.disabled = true;
+    try {
+      if (_isCustomRoute()) {
+        await loadCamerasForGeometry(generation);
+      } else {
+        await loadCameras();
+      }
+    } finally {
+      dom.regionBanner.classList.remove('retrying');
+      dom.regionBannerRetry.disabled = false;
     }
   }
 
@@ -1007,6 +1088,7 @@ const App = (() => {
         if (wp.region && API.hasRegion(wp.region)) neededRegions.add(wp.region);
       }
     }
+    _lastNeededRegions = neededRegions.size > 0 ? neededRegions : null;
 
     // ── Instant render from cache (synchronous, no network wait) ──
     const cachedCameras = API.getCachedImmediate(neededRegions.size > 0 ? neededRegions : null);
@@ -1047,6 +1129,7 @@ const App = (() => {
       dom.offlineBanner.classList.add('visible');
     }
     dom.skeletonList.classList.add('hidden');
+    updateRegionBanner(generation);
 
     // Auto-open camera from URL hash (e.g. #camera=ab-123)
     requestAnimationFrame(() => _openCameraFromHash());

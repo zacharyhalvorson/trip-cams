@@ -1,0 +1,13 @@
+{
+  "_comment": "Regions in expectOk are known-working camera APIs — the scheduled endpoint-health workflow fails (and opens an issue) if any of them stop serving cameras. Regions NOT listed are speculative registry entries probed report-only; promote them here once scripts/probe-endpoints.mjs shows them working.",
+  "expectOk": [
+    "AB", "SK", "MB", "ON", "NB", "NS", "PE", "NL", "YT", "BC", "QC",
+    "NY", "NJ", "PA", "CT", "GA", "FL", "SC", "WI", "LA", "MN", "IA",
+    "NE", "AZ", "CO", "MT", "ID", "UT", "NV", "MA", "IN", "WV",
+    "WA", "OR", "MD", "OH", "ND", "WY", "KY", "CA"
+  ],
+  "speculative": [
+    "NM", "AK", "IL", "VT", "NH", "ME", "SD", "KS", "OK", "VA", "NC",
+    "TN", "MO", "MI", "AL", "MS", "AR", "TX", "DE"
+  ]
+}
